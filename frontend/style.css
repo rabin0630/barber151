@@ -1,0 +1,321 @@
+/* リセットと基本設定 */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f9fafb;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ヘッダー */
+.site-header {
+  background-color: #111827;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
+}
+
+/* ヘッダーナビゲーション */
+.header-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-link {
+  color: #ffffff;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+  background-color: #374151; /* ホバー時に少し明るく */
+}
+
+.nav-link.active {
+  background-color: #6b7280; /* 現在のページは灰色 */
+  color: #e5e7eb;
+  pointer-events: none; /* クリックを無効化 */
+  cursor: default;
+}
+
+/* フッター */
+.site-footer {
+  background-color: #111827;
+  color: #ffffff;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+/* メイン（中央配置） */
+.main-body {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+
+.reservation-container {
+  width: 100%;
+  max-width: 700px; /* スケジュールテーブルが収まるように幅を調整 */
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.reservation-container h2 {
+  text-align: center;
+  margin-top: 0;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* 入力要素 */
+select, input[type="text"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 16px;
+  min-height: 48px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* スケジュールテーブルのスクロール対応 */
+.schedule-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  border: 1px solid #e5e7eb;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 600px;
+}
+
+th, td {
+  border: 1px solid #e5e7eb;
+  text-align: center;
+  padding: 6px 2px;
+}
+
+th {
+  background-color: #f3f4f6;
+  position: sticky;
+  top: 0;
+}
+
+.holiday {
+  color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.time-slot-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 30px;
+}
+
+.time-slot-btn.selected {
+  background-color: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+/* スケジュールナビゲーション */
+.schedule-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0 0.5rem;
+}
+
+.nav-btn {
+  padding: 0.5rem 1.5rem;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background-color: #e5e7eb;
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 選択内容のサマリー */
+.selection-summary {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.selection-summary p {
+  margin: 0;
+}
+
+/* 送信ボタン */
+.submit-btn {
+  width: 100%;
+  padding: 1rem;
+  background-color: #2563eb;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.status-message {
+  padding: 0.5rem;
+  margin: 0 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  text-align: center;
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+/* トーストメッセージ（画面中央ポップアップ） */
+.toast-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(254, 226, 226, 0.95); /* エラー文と同じ赤い背景色（少し透け） */
+  color: #991b1b;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  z-index: 1000;
+  text-align: center;
+  pointer-events: none; /* メッセージ越しに裏のボタンを押せるようにする */
+  width: max-content;
+  max-width: 80vw;
+}
+
+/* モーダル関連 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.clickable-cell {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clickable-cell:hover {
+  background-color: #e5e7eb;
+}
+
+/* モバイル対応（レスポンシブデザイン） */
+@media (max-width: 600px) {
+  body {
+    background-color: #ffffff;
+  }
+
+  .site-header {
+    flex-direction: column; /* スマホでは縦並びに */
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .main-body {
+    padding: 1rem;
+  }
+  
+  .reservation-container {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    background-color: transparent;
+  }
+  
+  table {
+    min-width: auto; /* モバイル（3日分）ではテーブルの最小幅を解除 */
+  }
+
+  td {
+    height: 56px; /* 丸ボタン(44px) + パディング(上下6px)に合わせて高さを固定 */
+  }
+
+  .time-slot-btn {
+    width: 44px;
+    height: 44px;
+    line-height: 42px;
+  }
+}

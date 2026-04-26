@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>barber151 - 予約</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>barber151</h1>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link active">予約画面</a>
+      <a href="admin.html" class="nav-link">管理者画面</a>
+    </nav>
+  </header>
+
+  <main class="main-body">
+    <div class="reservation-container" id="form-container">
+      <h2>予約フォーム</h2>
+      
+      <form id="reservation-form">
+        <div class="form-group">
+          <label for="customer-name">お名前</label>
+          <input type="text" id="customer-name" required placeholder="例: 山田 太郎">
+        </div>
+
+        <div class="form-group">
+          <label for="customer-contact">Instagram ID または 電話番号</label>
+          <input type="text" id="customer-contact" required placeholder="例: @barber151 または 090-0000-0000">
+        </div>
+
+        <div class="form-group">
+          <label for="menu-select">メニューを選択</label>
+          <select id="menu-select" required aria-required="true">
+            <option value="">選択してください</option>
+            <option value="cut">カット (5000円 / 1時間)</option>
+            <option value="color">カラー (8000円 / 2時間)</option>
+            <option value="perm">パーマ (10000円 / 3時間)</option>
+          </select>
+        </div>
+
+        <div id="schedule-wrapper" class="schedule-wrapper">
+          <div class="schedule-nav">
+            <button type="button" class="nav-btn prev-schedule-btn">←</button>
+            <div id="status-message" class="status-message" role="alert" style="display: none;"></div>
+            <button type="button" class="nav-btn next-schedule-btn">→</button>
+          </div>
+          <table id="schedule-table">
+            <thead>
+              <tr id="schedule-header">
+                <th>時間</th>
+              </tr>
+            </thead>
+            <tbody id="schedule-body"></tbody>
+          </table>
+          <div class="schedule-nav">
+            <button type="button" class="nav-btn prev-schedule-btn">←</button>
+            <button type="button" class="nav-btn next-schedule-btn">→</button>
+          </div>
+          <input type="hidden" id="selected-datetime" required>
+        </div>
+
+        <div id="selection-summary" class="selection-summary" style="display: none;">
+          <p>選択内容: <span id="summary-menu">未選択</span> / <span id="summary-datetime">未選択</span></p>
+        </div>
+
+        <button type="submit" id="submit-button" class="submit-btn">予約を確定する</button>
+      </form>
+    </div>
+
+    <!-- 予約完了画面（初期状態では非表示） -->
+    <div class="reservation-container" id="success-container" style="display: none;">
+      <h2>予約完了</h2>
+      <p style="text-align: center; margin-top: 1.5rem; margin-bottom: 2rem;">
+        予約を完了しました。<br>この時間です：<br>
+        <strong id="success-datetime" style="font-size: 1.2rem; color: #2563eb; display: inline-block; margin-top: 0.5rem;"></strong>
+      </p>
+      <button type="button" id="back-to-home-btn" class="submit-btn">ホームに戻る</button>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2024 barber151</p>
+  </footer>
+
+  <!-- 画面中央のトーストメッセージ -->
+  <div id="toast-message" class="toast-message" style="display: none;"></div>
+
+  <script defer src="main.js"></script>
+</body>
+</html>
