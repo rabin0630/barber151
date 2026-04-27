@@ -3,10 +3,30 @@ const headerRow = document.getElementById('schedule-header');
 const bodyElement = document.getElementById('schedule-body');
 const prevBtns = document.querySelectorAll('.prev-schedule-btn');
 const nextBtns = document.querySelectorAll('.next-schedule-btn');
+const dateJumpInput = document.getElementById('date-jump');
 
 let currentStartDate = new Date();
 let daysToShow = window.innerWidth <= 600 ? 3 : 7;
 let bookedReservations = [];
+
+// 日付ジャンプの初期設定
+if (dateJumpInput) {
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  dateJumpInput.min = todayStr;
+  
+  const maxDate = new Date();
+  maxDate.setMonth(maxDate.getMonth() + 2);
+  const maxStr = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`;
+  dateJumpInput.max = maxStr;
+
+  dateJumpInput.addEventListener('change', (e) => {
+    if (e.target.value) {
+      currentStartDate = new Date(e.target.value);
+      loadAndRenderSchedule();
+    }
+  });
+}
 
 // サーバーから予約情報を取得してカレンダーを描画する関数
 async function loadAndRenderSchedule() {
@@ -103,17 +123,52 @@ prevBtns.forEach(btn => {
 });
 
 function renderSchedule(startDate) {
-  headerRow.innerHTML = '<th>時間</th>';
+  if (dateJumpInput) {
+    const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+    dateJumpInput.value = startStr;
+  }
+
+  const headerMonthRow = document.getElementById('schedule-header-month');
+  headerMonthRow.innerHTML = '';
+  headerRow.innerHTML = '';
+
+  const thCorner = document.createElement('th');
+  thCorner.rowSpan = 2;
+  thCorner.textContent = '日時';
+  headerMonthRow.appendChild(thCorner);
+
   bodyElement.innerHTML = '';
 
   const dates = [];
+  let currentMonthStr = "";
+  let currentMonthTh = null;
+  let colspanCount = 0;
+
   for (let i = 0; i < daysToShow; i++) {
     const d = new Date(startDate);
     d.setDate(startDate.getDate() + i);
     const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
     dates.push(d);
+    
+    const monthStr = `${d.getFullYear()}年${d.getMonth() + 1}月`;
+    if (monthStr !== currentMonthStr) {
+      currentMonthTh = document.createElement('th');
+      currentMonthTh.className = 'th-year-month';
+      currentMonthTh.textContent = monthStr;
+      headerMonthRow.appendChild(currentMonthTh);
+      currentMonthStr = monthStr;
+      colspanCount = 1;
+    } else {
+      colspanCount++;
+      currentMonthTh.colSpan = colspanCount;
+    }
+
     const th = document.createElement('th');
-    th.textContent = `${d.getMonth() + 1}/${d.getDate()} (${dayOfWeek})`;
+    th.innerHTML = `<div class="th-date-num">${d.getDate()}</div><div class="th-day-of-week">${dayOfWeek}</div>`;
+    
+    if (d.getDay() === 1 || d.getDay() === 2) {
+      th.classList.add('holiday-text');
+    }
     headerRow.appendChild(th);
   }
 
@@ -215,9 +270,20 @@ adminForm.addEventListener('submit', async (e) => {
   adminStatusMessage.style.display = 'none';
 
   const customerName = document.getElementById('admin-customer-name').value;
-  const customerContact = document.getElementById('admin-customer-contact').value;
+  const instagramId = document.getElementById('admin-customer-instagram').value;
+  const phoneNumber = document.getElementById('admin-customer-phone').value;
   const menuId = document.getElementById('admin-menu-select').value;
   const datetime = adminDatetimeInput.value;
+
+  if (!instagramId.trim() && !phoneNumber.trim()) {
+    adminStatusMessage.textContent = 'Instagram ID または 電話番号のどちらかを入力してください。';
+    adminStatusMessage.style.display = 'block';
+    adminStatusMessage.style.backgroundColor = '#fee2e2';
+    adminStatusMessage.style.color = '#991b1b';
+    adminSubmitBtn.textContent = '追加する';
+    adminSubmitBtn.disabled = false;
+    return;
+  }
 
   try {
     const response = await fetch('http://localhost:8000/reservations', {
@@ -225,7 +291,8 @@ adminForm.addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: customerName,
-        contact: customerContact,
+        instagram_id: instagramId,
+        phone_number: phoneNumber,
         menu_id: menuId,
         reservation_date: datetime
       })

@@ -36,7 +36,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS reservations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             customer_name TEXT NOT NULL,
-            customer_contact TEXT NOT NULL,
+            instagram_id TEXT,
+            phone_number TEXT,
             menu_id TEXT NOT NULL,
             start_datetime DATETIME NOT NULL,
             end_datetime DATETIME NOT NULL,
@@ -64,7 +65,8 @@ init_db()
 # フロントエンドから送られてくるデータの型定義（バリデーション）
 class ReservationRequest(BaseModel):
     name: str
-    contact: str
+    instagram_id: str | None = None
+    phone_number: str | None = None
     menu_id: str
     reservation_date: str  # ISO8601形式の文字列
 
@@ -118,6 +120,9 @@ def create_reservation(req: ReservationRequest):
     cursor = conn.cursor()
     
     try:
+        if not req.instagram_id and not req.phone_number:
+            raise HTTPException(status_code=400, detail="Instagram ID または 電話番号のどちらかを入力してください。")
+
         # 1. 選択されたメニューの所要時間をDBから取得する
         cursor.execute('SELECT duration FROM menus WHERE id = ?', (req.menu_id,))
         menu = cursor.fetchone()
@@ -143,9 +148,9 @@ def create_reservation(req: ReservationRequest):
         
         # 4. 問題なければ予約を登録する
         cursor.execute('''
-            INSERT INTO reservations (customer_name, customer_contact, menu_id, start_datetime, end_datetime)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (req.name, req.contact, req.menu_id, start_dt.isoformat(), end_dt.isoformat()))
+            INSERT INTO reservations (customer_name, instagram_id, phone_number, menu_id, start_datetime, end_datetime)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (req.name, req.instagram_id, req.phone_number, req.menu_id, start_dt.isoformat(), end_dt.isoformat()))
         
         conn.commit()
         return {"message": "予約が完了しました！"}

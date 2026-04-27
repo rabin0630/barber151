@@ -26,8 +26,14 @@
         </div>
 
         <div class="form-group">
-          <label for="customer-contact">Instagram ID または 電話番号</label>
-          <input type="text" id="customer-contact" required placeholder="例: @barber151 または 090-0000-0000">
+          <label for="customer-instagram">Instagram ID（任意）</label>
+          <input type="text" id="customer-instagram" placeholder="例: @barber151">
+        </div>
+
+        <div class="form-group">
+          <label for="customer-phone">電話番号（任意）</label>
+          <input type="text" id="customer-phone" placeholder="例: 090-0000-0000">
+          <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem; margin-bottom: 0;">※Instagram ID、または電話番号のどちらかを必ず入力してください</p>
         </div>
 
         <div class="form-group">
@@ -40,31 +46,29 @@
           </select>
         </div>
 
-        <div id="schedule-wrapper" class="schedule-wrapper">
+        <div id="control-wrapper" class="control-wrapper">
           <div class="schedule-nav">
             <button type="button" class="nav-btn prev-schedule-btn">←</button>
-            <div id="status-message" class="status-message" role="alert" style="display: none;"></div>
+            <input type="date" id="date-jump" class="date-jump-input">
             <button type="button" class="nav-btn next-schedule-btn">→</button>
           </div>
+        </div>
+        <div id="schedule-wrapper" class="schedule-wrapper">
           <table id="schedule-table">
             <thead>
-              <tr id="schedule-header">
-                <th>時間</th>
-              </tr>
+              <tr id="schedule-header-month"></tr>
+              <tr id="schedule-header"></tr>
             </thead>
             <tbody id="schedule-body"></tbody>
           </table>
-          <div class="schedule-nav">
-            <button type="button" class="nav-btn prev-schedule-btn">←</button>
-            <button type="button" class="nav-btn next-schedule-btn">→</button>
-          </div>
           <input type="hidden" id="selected-datetime" required>
         </div>
-
+        
         <div id="selection-summary" class="selection-summary" style="display: none;">
           <p>選択内容: <span id="summary-menu">未選択</span> / <span id="summary-datetime">未選択</span></p>
         </div>
-
+        
+        <div id="status-message" class="status-message" role="alert" style="display: none;"></div>
         <button type="submit" id="submit-button" class="submit-btn">予約を確定する</button>
       </form>
     </div>

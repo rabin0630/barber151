@@ -112,8 +112,8 @@ select, input[type="text"] {
 /* スケジュールテーブルのスクロール対応 */
 .schedule-wrapper {
   width: 100%;
-  overflow-x: auto;
-  margin: 1.5rem 0;
+  overflow: visible; /* ページ全体のスクロールでstickyを効かせるため */
+  margin-bottom: 1.5rem;
   border: 1px solid #e5e7eb;
 }
 
@@ -122,18 +122,55 @@ table {
   border-collapse: collapse;
   font-size: 13px;
   min-width: 600px;
+  table-layout: fixed; /* セルの幅を均等に固定する */
 }
 
 th, td {
   border: 1px solid #e5e7eb;
   text-align: center;
-  padding: 6px 2px;
+  padding: 4px 2px;
+  box-sizing: border-box;
 }
 
 th {
   background-color: #f3f4f6;
   position: sticky;
+  z-index: 10;
+  vertical-align: middle;
+}
+
+/* 年月行（上段）の追従設定 */
+#schedule-header-month th {
   top: 0;
+  height: 28px;
+}
+
+/* 日付曜日行（下段）の追従設定 */
+#schedule-header th {
+  top: 28px; /* 上段の高さ分下げる */
+}
+
+/* 1列目（日時・時間）の幅を固定し、残りの日付列を均等にする */
+#schedule-header-month th:first-child,
+#schedule-body td:first-child {
+  width: 60px;
+}
+
+.th-year-month {
+  font-size: 0.8rem;
+  color: #4b5563;
+  font-weight: bold;
+}
+
+.th-date-num {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.th-day-of-week {
+  font-size: 0.75rem;
+  color: #6b7280;
 }
 
 .holiday {
@@ -158,12 +195,60 @@ th {
   border-color: #2563eb;
 }
 
+/* セルの背景色（ストライプ） */
+tbody tr:nth-child(even) td:not(.holiday):not(.booked-cell) {
+  background-color: #f9fafb; /* 奇数時間(9時,11時...)を薄いグレーに */
+}
+tbody tr:nth-child(odd) td:not(.holiday):not(.booked-cell) {
+  background-color: #ffffff; /* 偶数時間(8時,10時...)を白に */
+}
+
+.holiday-text {
+  color: #ef4444; /* 休日の日付を赤色に */
+}
+
+.date-jump-input {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: #f3f4f6;
+  color: transparent; /* テキストを透明にして隠す */
+  cursor: pointer;
+  position: relative;
+}
+
+/* Chrome/Safari/スマホ用: 日付テキストエリアを完全に非表示 */
+.date-jump-input::-webkit-datetime-edit {
+  display: none;
+}
+
+/* カレンダーアイコンをボタン全体に広げて中央に配置 */
+.date-jump-input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background-position: center;
+  background-size: 20px;
+}
+
+/* 操作ラッパー */
+.control-wrapper {
+  margin-top: 1.5rem;
+}
+
 /* スケジュールナビゲーション */
 .schedule-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 0 0.5rem;
+  padding: 0 0 0.5rem;
 }
 
 .nav-btn {
@@ -221,12 +306,11 @@ th {
 
 .status-message {
   padding: 0.5rem;
-  margin: 0 1rem;
+  margin-bottom: 1rem;
   border-radius: 4px;
   font-weight: bold;
   text-align: center;
   font-size: 0.85rem;
-  flex: 1;
 }
 
 /* トーストメッセージ（画面中央ポップアップ） */
@@ -307,6 +391,14 @@ th {
   
   table {
     min-width: auto; /* モバイル（3日分）ではテーブルの最小幅を解除 */
+  }
+
+  .schedule-wrapper {
+    overflow: visible; /* stickyをページ全体で効かせるために枠の制御を解除 */
+  }
+
+  th {
+    z-index: 10; /* スクロール時に他の予約セルなどの上に重なるようにする */
   }
 
   td {

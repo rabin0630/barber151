@@ -1,9 +1,10 @@
-
+// 宣言
 const form = document.getElementById('reservation-form');
 const scheduleWrapper = document.getElementById('schedule-wrapper');
 const headerRow = document.getElementById('schedule-header');
 const bodyElement = document.getElementById('schedule-body');
 const statusMessage = document.getElementById('status-message');
+const dateJumpInput = document.getElementById('date-jump');
 const prevBtns = document.querySelectorAll('.prev-schedule-btn');
 const nextBtns = document.querySelectorAll('.next-schedule-btn');
 const menuSelect = document.getElementById('menu-select');
@@ -11,7 +12,8 @@ const selectionSummary = document.getElementById('selection-summary');
 const summaryMenu = document.getElementById('summary-menu');
 const summaryDatetime = document.getElementById('summary-datetime');
 const nameInput = document.getElementById('customer-name');
-const contactInput = document.getElementById('customer-contact');
+const instagramInput = document.getElementById('customer-instagram');
+const phoneInput = document.getElementById('customer-phone');
 const formContainer = document.getElementById('form-container');
 const successContainer = document.getElementById('success-container');
 const successDatetimeMsg = document.getElementById('success-datetime');
@@ -19,14 +21,36 @@ const backToHomeBtn = document.getElementById('back-to-home-btn');
 const toastMessage = document.getElementById('toast-message');
 
 // スケジュール表示の管理変数
+
+/** カレンダーに表示する最初の日*/
 let currentStartDate = new Date();
-let daysToShow = window.innerWidth <= 600 ? 3 : 7; // スマホは3日、PCは7日
+
+const daysToShow = (window.innerWidth <= 600) ? 3 : 7; // スマホは3日、PCは7日 if文
+
+/**予約可能最大日*/
 const maxDate = new Date();
 maxDate.setMonth(maxDate.getMonth() + 2); // 2ヶ月先まで予約可能
-
 let bookedReservations = [];
 
-// サーバーから予約情報を取得してカレンダーを描画する関数
+// 日付ジャンプの初期設定 @TODO
+if (dateJumpInput) {
+  // --- 1. カレンダーの選択可能範囲の設定 ---
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  dateJumpInput.min = todayStr;
+  const maxStr = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`;
+  dateJumpInput.max = maxStr;
+
+  // --- 2. イベントリスナーの登録 ---
+  dateJumpInput.addEventListener('change', (event) => {
+    if (event.target.value) {
+      currentStartDate = new Date(event.target.value);
+      loadAndRenderSchedule();
+    }
+  });
+};
+
+/** サーバーから予約情報を取得しカレンダーを描画する */
 async function loadAndRenderSchedule() {
   try {
     const res = await fetch('http://localhost:8000/reservations');
@@ -116,11 +140,11 @@ window.addEventListener('resize', () => {
 // 初期表示としてスケジュールを生成
 loadAndRenderSchedule();
 
-// ナビゲーションボタンのイベント
+// 矢印ボタンのイベントリスナー（復活）
 nextBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     currentStartDate.setDate(currentStartDate.getDate() + daysToShow);
-    loadAndRenderSchedule();
+    renderSchedule(currentStartDate);
   });
 });
 
@@ -133,22 +157,57 @@ prevBtns.forEach(btn => {
     if (currentStartDate < today) {
       currentStartDate = new Date(today);
     }
-    loadAndRenderSchedule();
+    renderSchedule(currentStartDate);
   });
 });
 
 function renderSchedule(startDate) {
-  headerRow.innerHTML = '<th>時間</th>';
+  if (dateJumpInput) {
+    const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+    dateJumpInput.value = startStr;
+  }
+
+  const headerMonthRow = document.getElementById('schedule-header-month');
+  headerMonthRow.innerHTML = '';
+  headerRow.innerHTML = '';
+
+  const thCorner = document.createElement('th');
+  thCorner.rowSpan = 2;
+  thCorner.textContent = '日時';
+  headerMonthRow.appendChild(thCorner);
+
   bodyElement.innerHTML = '';
 
   const dates = [];
+  let currentMonthStr = "";
+  let currentMonthTh = null;
+  let colspanCount = 0;
+
   for (let i = 0; i < daysToShow; i++) {
     const d = new Date(startDate);
     d.setDate(startDate.getDate() + i);
     const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
     dates.push(d);
+    
+    const monthStr = `${d.getFullYear()}年${d.getMonth() + 1}月`;
+    if (monthStr !== currentMonthStr) {
+      currentMonthTh = document.createElement('th');
+      currentMonthTh.className = 'th-year-month';
+      currentMonthTh.textContent = monthStr;
+      headerMonthRow.appendChild(currentMonthTh);
+      currentMonthStr = monthStr;
+      colspanCount = 1;
+    } else {
+      colspanCount++;
+      currentMonthTh.colSpan = colspanCount;
+    }
+
     const th = document.createElement('th');
-    th.textContent = `${d.getMonth() + 1}/${d.getDate()} (${dayOfWeek})`;
+    th.innerHTML = `<div class="th-date-num">${d.getDate()}</div><div class="th-day-of-week">${dayOfWeek}</div>`;
+    
+    if (d.getDay() === 1 || d.getDay() === 2) {
+      th.classList.add('holiday-text');
+    }
     headerRow.appendChild(th);
   }
 
@@ -221,7 +280,7 @@ function renderSchedule(startDate) {
         }
 
         btn.onclick = () => {
-          if (!nameInput.value.trim() || !contactInput.value.trim() || !menuSelect.value) {
+          if (!nameInput.value.trim() || (!instagramInput.value.trim() && !phoneInput.value.trim()) || !menuSelect.value) {
             showStatus('お名前、連絡先、メニューを入力・選択してから時間を選択してください。');
             statusMessage.scrollIntoView({ behavior: 'smooth', block: 'center' }); // スマホで気づくようにエラー位置へスクロール
             return;
@@ -269,26 +328,20 @@ function renderSchedule(startDate) {
     });
     bodyElement.appendChild(tr);
   }
-
-  // ボタンの有効/無効状態を更新
-  const todayZero = new Date();
-  todayZero.setHours(0, 0, 0, 0);
-  const startZero = new Date(startDate);
-  startZero.setHours(0, 0, 0, 0);
-  
-  prevBtns.forEach(btn => btn.disabled = startZero <= todayZero); // 今日以前なら戻るボタン無効
-  
-  const nextCheckDate = new Date(startDate);
-  nextCheckDate.setDate(startDate.getDate() + daysToShow);
-  nextBtns.forEach(btn => btn.disabled = nextCheckDate > maxDate); // 2ヶ月先を超えるなら進むボタン無効
 }
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const customerName = nameInput.value;
-  const customerContact = contactInput.value;
+  const instagramId = instagramInput.value;
+  const phoneNumber = phoneInput.value;
   const menuId = document.getElementById('menu-select').value;
   const datetime = document.getElementById('selected-datetime').value;
+
+  if (!instagramId.trim() && !phoneNumber.trim()) {
+    showStatus('Instagram ID、または電話番号のどちらかを入力してください。');
+    return;
+  }
 
   if (!datetime) {
     showStatus('予約時間を選択してください。');
@@ -301,7 +354,8 @@ form.addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: customerName,
-        contact: customerContact,
+        instagram_id: instagramId,
+        phone_number: phoneNumber,
         menu_id: menuId,
         reservation_date: datetime
       })

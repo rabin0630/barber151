@@ -30,15 +30,18 @@
     <div class="reservation-container" style="max-width: 900px;">
       <h2>予約一覧（管理者用）</h2>
       
-      <div id="schedule-wrapper" class="schedule-wrapper">
+      <div id="control-wrapper" class="control-wrapper">
         <div class="schedule-nav">
           <button type="button" class="nav-btn prev-schedule-btn">←</button>
+          <input type="date" id="date-jump" class="date-jump-input">
           <button type="button" class="nav-btn next-schedule-btn">→</button>
         </div>
+      </div>
+      <div id="schedule-wrapper" class="schedule-wrapper">
         <table id="schedule-table">
           <thead>
+            <tr id="schedule-header-month"></tr>
             <tr id="schedule-header">
-              <th>時間</th>
             </tr>
           </thead>
           <tbody id="schedule-body"></tbody>
@@ -72,8 +75,13 @@
         </div>
 
         <div class="form-group">
-          <label for="admin-customer-contact">電話番号</label>
-          <input type="text" id="admin-customer-contact" required placeholder="例: 090-0000-0000">
+          <label for="admin-customer-instagram">Instagram ID（任意）</label>
+          <input type="text" id="admin-customer-instagram" placeholder="例: @barber151">
+        </div>
+
+        <div class="form-group">
+          <label for="admin-customer-phone">電話番号（任意）</label>
+          <input type="text" id="admin-customer-phone" placeholder="例: 090-0000-0000">
         </div>
 
         <div class="form-group">
