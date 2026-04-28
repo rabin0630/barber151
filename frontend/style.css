@@ -98,7 +98,7 @@ label {
 }
 
 /* 入力要素 */
-select, input[type="text"] {
+select, input[type="text"],input[type="number"] {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #d1d5db;
@@ -108,6 +108,13 @@ select, input[type="text"] {
   box-sizing: border-box;
   font-family: inherit;
 }
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 
 /* スケジュールテーブルのスクロール対応 */
 .schedule-wrapper {
