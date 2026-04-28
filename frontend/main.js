@@ -1,4 +1,4 @@
-// 宣言
+// 宣言である
 const form = document.getElementById('reservation-form');
 const scheduleWrapper = document.getElementById('schedule-wrapper');
 const headerRow = document.getElementById('schedule-header');
@@ -20,17 +20,26 @@ const successDatetimeMsg = document.getElementById('success-datetime');
 const backToHomeBtn = document.getElementById('back-to-home-btn');
 const toastMessage = document.getElementById('toast-message');
 
-// スケジュール表示の管理変数
+/** 確定済みの予約データをすべて取得するurlである */
+const ReservationUrl = 'http://localhost:8000/reservations';
 
-/** カレンダーに表示する最初の日*/
+// --- スケジュール表示の管理変数である ---
+/** カレンダーに表示する最初の日である */
 let currentStartDate = new Date();
-
+/** セルの表示日数である */
 const daysToShow = (window.innerWidth <= 600) ? 3 : 7; // スマホは3日、PCは7日 if文
-
-/**予約可能最大日*/
+/** 予約可能最大日である */
 const maxDate = new Date();
-maxDate.setMonth(maxDate.getMonth() + 2); // 2ヶ月先まで予約可能
-let bookedReservations = [];
+maxDate.setMonth(maxDate.getMonth() + 2); // 2ヶ月先まで予約可能と設定
+
+// 画面リサイズ時に表示日数を更新する
+window.addEventListener('resize', () => {
+  const newDaysToShow = window.innerWidth <= 600 ? 3 : 7;
+  if (newDaysToShow !== daysToShow) {
+    daysToShow = newDaysToShow;
+    renderSchedule(currentStartDate);
+  }
+});
 
 // 日付ジャンプの初期設定 @TODO
 if (dateJumpInput) {
@@ -40,7 +49,7 @@ if (dateJumpInput) {
   dateJumpInput.min = todayStr;
   const maxStr = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`;
   dateJumpInput.max = maxStr;
-
+  
   // --- 2. イベントリスナーの登録 ---
   dateJumpInput.addEventListener('change', (event) => {
     if (event.target.value) {
@@ -50,15 +59,21 @@ if (dateJumpInput) {
   });
 };
 
-/** サーバーから予約情報を取得しカレンダーを描画する */
+/** 決定した予約の開始時間と終了時間を格納している配列である */
+let bookedReservations = [];
+
+/** ---サーバーから予約情報を取得しカレンダーを描画する---
+ * 1. 予約情報の開始時刻と終了時刻を配列に格納する
+ * 2. スケジュールを描写するのである
+*/
 async function loadAndRenderSchedule() {
   try {
-    const res = await fetch('http://localhost:8000/reservations');
+    const res = await fetch(ReservationUrl);
     if (res.ok) {
       const data = await res.json();
       bookedReservations = data.reservations.map(r => ({
         start: new Date(r.start_datetime),
-        end: new Date(r.end_datetime)
+        end: new Date(r.end_datetime),
       }));
     }
   } catch (e) {
@@ -69,19 +84,24 @@ async function loadAndRenderSchedule() {
 
 let toastTimeout;
 
+/** --エラーメッセージを表示する関数である--
+ * 第一引数はテキストの挿入
+ */
 const showStatus = (text, isError = true) => {
+  // --1.statusMessageの表示設定--
   statusMessage.textContent = text;
   statusMessage.style.display = 'block';
   statusMessage.style.backgroundColor = isError ? '#fee2e2' : '#dcfce7';
   statusMessage.style.color = isError ? '#991b1b' : '#166534';
 
   // 画面中央のトーストにも表示して5秒で消す（3秒後から2秒かけてフェードアウト）
+  // --2.エラーポップアップの表示設定--
   toastMessage.textContent = text;
   toastMessage.style.display = 'block';
   toastMessage.style.transition = 'none'; // パッと表示させる
   toastMessage.style.opacity = '1';
 
-  if (toastTimeout) clearTimeout(toastTimeout);
+  if (toastTimeout) clearTimeout(toastTimeout); // エラーが連続して起きた場合のバグ処理
   toastTimeout = setTimeout(() => {
     toastMessage.style.transition = 'opacity 2s ease-out'; // 2秒かけて透明にする
     toastMessage.style.opacity = '0';
@@ -91,18 +111,26 @@ const showStatus = (text, isError = true) => {
   }, 3000);
 };
 
-// 選択内容サマリーを更新・表示する関数
+/**
+ * 選択したメニューを選択内容欄に表示する関数である
+ * 1. 選択したメニューの表示
+ * 2. 選択した予約日付の表示、時間計算
+ */
 const updateSummary = () => {
-  const selectedMenuOption = menuSelect.options[menuSelect.selectedIndex];
+  /** ---1. 選択したメニューの表示--- */
+  // 選択したメニューのoption要素を代入
+  const selectedMenuOption = menuSelect.options[menuSelect.selectedIndex]
+  // 選択したメニューのvalueを代入
   const menuVal = menuSelect.value;
+  // 選択内容欄に選択したメニューの表示
+  summaryMenu.textContent = selectedMenuOption.value ? selectedMenuOption.text : '未選択';
 
+  /** --2. 選択した予約日付の表示、時間計算 */
+  // 施術時間の設定
   let duration = 0;
   if (menuVal === 'cut') { duration = 1; }
   else if (menuVal === 'color') { duration = 2; }
   else if (menuVal === 'perm') { duration = 3; }
-
-  summaryMenu.textContent = selectedMenuOption.value ? selectedMenuOption.text : '未選択';
-
   const datetimeVal = document.getElementById('selected-datetime').value;
   if (datetimeVal) {
     const d = new Date(datetimeVal);
@@ -114,6 +142,7 @@ const updateSummary = () => {
     summaryDatetime.textContent = '未選択';
   }
 
+  // 何かが選択されたら選択内容欄の表示
   if (menuSelect.value || datetimeVal) {
     selectionSummary.style.display = 'block';
   } else {
@@ -128,14 +157,6 @@ menuSelect.addEventListener('change', () => {
   renderSchedule(currentStartDate);
 });
 
-// 画面リサイズ時に表示日数を更新する
-window.addEventListener('resize', () => {
-  const newDaysToShow = window.innerWidth <= 600 ? 3 : 7;
-  if (newDaysToShow !== daysToShow) {
-    daysToShow = newDaysToShow;
-    renderSchedule(currentStartDate);
-  }
-});
 
 // 初期表示としてスケジュールを生成
 loadAndRenderSchedule();
@@ -161,6 +182,9 @@ prevBtns.forEach(btn => {
   });
 });
 
+/**スケジュールを描写する関数である
+ * 第一引数にはスケジュール開始日を渡すのである
+ */
 function renderSchedule(startDate) {
   if (dateJumpInput) {
     const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
