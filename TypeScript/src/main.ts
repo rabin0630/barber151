@@ -1,40 +1,45 @@
+// 型定義
+interface Reservation {
+  start: Date;
+  end: Date;
+}
+
 // 宣言である
-const form = document.getElementById('reservation-form');
-const scheduleWrapper = document.getElementById('schedule-wrapper');
-const headerRow = document.getElementById('schedule-header');
-const bodyElement = document.getElementById('schedule-body');
-const statusMessage = document.getElementById('status-message');
-const dateJumpInput = document.getElementById('date-jump');
-const prevBtns = document.querySelectorAll('.prev-schedule-btn');
-const nextBtns = document.querySelectorAll('.next-schedule-btn');
-const menuSelect = document.getElementById('menu-select');
-const selectionSummary = document.getElementById('selection-summary');
-const summaryMenu = document.getElementById('summary-menu');
-const summaryDatetime = document.getElementById('summary-datetime');
-const nameInput = document.getElementById('customer-name');
-const instagramInput = document.getElementById('customer-instagram');
-const phoneInput = document.getElementById('customer-phone');
-const formContainer = document.getElementById('form-container');
-const successContainer = document.getElementById('success-container');
-const successDatetimeMsg = document.getElementById('success-datetime');
-const backToHomeBtn = document.getElementById('back-to-home-btn');
-const toastMessage = document.getElementById('toast-message');
+const form = document.getElementById('reservation-form') as HTMLFormElement;
+const headerRow = document.getElementById('schedule-header') as HTMLTableRowElement;
+const bodyElement = document.getElementById('schedule-body') as HTMLTableSectionElement;
+const statusMessage = document.getElementById('status-message') as HTMLDivElement;
+const dateJumpInput = document.getElementById('date-jump') as HTMLInputElement;
+const prevBtns = document.querySelectorAll('.prev-schedule-btn') as NodeListOf<HTMLButtonElement>;
+const nextBtns = document.querySelectorAll('.next-schedule-btn') as NodeListOf<HTMLButtonElement>;
+const menuSelect = document.getElementById('menu-select') as HTMLSelectElement;
+const selectionSummary = document.getElementById('selection-summary') as HTMLDivElement;
+const summaryMenu = document.getElementById('summary-menu') as HTMLSpanElement;
+const summaryDatetime = document.getElementById('summary-datetime') as HTMLSpanElement;
+const nameInput = document.getElementById('customer-name') as HTMLInputElement;
+const instagramInput = document.getElementById('customer-instagram') as HTMLInputElement;
+const phoneInput = document.getElementById('customer-phone') as HTMLInputElement;
+const formContainer = document.getElementById('form-container') as HTMLDivElement;
+const successContainer = document.getElementById('success-container') as HTMLDivElement;
+const successDatetimeMsg = document.getElementById('success-datetime') as HTMLElement;
+const backToHomeBtn = document.getElementById('back-to-home-btn') as HTMLButtonElement;
+const toastMessage = document.getElementById('toast-message') as HTMLDivElement;
 
 /** 確定済みの予約データをすべて取得するurlである */
-const ReservationUrl = 'http://localhost:8000/reservations';
+const ReservationUrl: string = 'http://localhost:8000/reservations';
 
 // --- スケジュール表示の管理変数である ---
 /** カレンダーに表示する最初の日である */
-let currentStartDate = new Date();
+let currentStartDate: Date = new Date();
 /** セルの表示日数である */
-const daysToShow = (window.innerWidth <= 600) ? 3 : 7; // スマホは3日、PCは7日 if文
+let daysToShow: number = (window.innerWidth <= 600) ? 3 : 7; // スマホは3日、PCは7日 if文 (letに変更)
 /** 予約可能最大日である */
-const maxDate = new Date();
+const maxDate: Date = new Date();
 maxDate.setMonth(maxDate.getMonth() + 2); // 2ヶ月先まで予約可能と設定
 
 // 画面リサイズ時に表示日数を更新する
 window.addEventListener('resize', () => {
-  const newDaysToShow = window.innerWidth <= 600 ? 3 : 7;
+  const newDaysToShow: number = window.innerWidth <= 600 ? 3 : 7;
   if (newDaysToShow !== daysToShow) {
     daysToShow = newDaysToShow;
     renderSchedule(currentStartDate);
@@ -44,23 +49,24 @@ window.addEventListener('resize', () => {
 // 日付ジャンプの初期設定 @TODO
 if (dateJumpInput) {
   // --- 1. カレンダーの選択可能範囲の設定 ---
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const today: Date = new Date();
+  const todayStr: string = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   dateJumpInput.min = todayStr;
-  const maxStr = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`;
+  const maxStr: string = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`;
   dateJumpInput.max = maxStr;
 
   // --- 2. イベントリスナーの登録 ---
-  dateJumpInput.addEventListener('change', (event) => {
-    if (event.target.value) {
-      currentStartDate = new Date(event.target.value);
+  dateJumpInput.addEventListener('change', (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    if (target.value) {
+      currentStartDate = new Date(target.value);
       loadAndRenderSchedule();
     }
   });
 };
 
 /** 決定した予約の開始時間と終了時間を格納している配列である */
-let bookedReservations = [];
+let bookedReservations: Reservation[] = [];
 
 /** ---サーバーから予約情報を取得しカレンダーを描画する---
  * 1. 予約情報の開始時刻と終了時刻を配列に格納する
@@ -68,10 +74,10 @@ let bookedReservations = [];
 */
 async function loadAndRenderSchedule() {
   try {
-    const res = await fetch(ReservationUrl);
+    const res: Response = await fetch(ReservationUrl);
     if (res.ok) {
-      const data = await res.json();
-      bookedReservations = data.reservations.map(r => ({
+      const data: any = await res.json();
+      bookedReservations = data.reservations.map((r: any) => ({
         start: new Date(r.start_datetime),
         end: new Date(r.end_datetime),
       }));
@@ -82,12 +88,12 @@ async function loadAndRenderSchedule() {
   renderSchedule(currentStartDate);
 }
 
-let toastTimeout;
+let toastTimeout: ReturnType<typeof setTimeout>;
 
 /** --エラーメッセージを表示する関数である--
  * 第一引数はテキストの挿入
  */
-const showStatus = (text, isError = true) => {
+const showStatus = (text: string, isError = true) => {
   // --1.statusMessageの表示設定--
   statusMessage.textContent = text;
   statusMessage.style.display = 'block';
@@ -119,7 +125,7 @@ const showStatus = (text, isError = true) => {
 const updateSummary = () => {
   /** ---1. 選択したメニューの表示--- */
   // 選択したメニューのoption要素を代入
-  const selectedMenuOption = menuSelect.options[menuSelect.selectedIndex]
+  const selectedMenuOption = menuSelect.options[menuSelect.selectedIndex] as HTMLOptionElement;
   // 選択したメニューのvalueを代入
   const menuVal = menuSelect.value;
   // 選択内容欄に選択したメニューの表示
@@ -127,16 +133,17 @@ const updateSummary = () => {
 
   /** --2. 選択した予約日付の表示、時間計算 */
   // 施術時間の設定
-  let duration = 0;
+  let duration: number = 0;
   if (menuVal === 'cut') { duration = 1; }
   else if (menuVal === 'color') { duration = 2; }
   else if (menuVal === 'perm') { duration = 3; }
-  const datetimeVal = document.getElementById('selected-datetime').value;
+  const datetimeInput = document.getElementById('selected-datetime') as HTMLInputElement;
+  const datetimeVal: string = datetimeInput.value;
   if (datetimeVal) {
-    const d = new Date(datetimeVal);
-    const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+    const d: Date = new Date(datetimeVal);
+    const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
     // 所要時間がある場合は終了時間を計算して表示。メニュー未選択の時は1時間とする
-    const endHour = d.getHours() + (duration || 1);
+    const endHour: number = d.getHours() + (duration || 1);
     summaryDatetime.textContent = `${d.getMonth() + 1}/${d.getDate()}(${dayOfWeek}) ${d.getHours()}:00 〜 ${endHour}:00`;
   } else {
     summaryDatetime.textContent = '未選択';
@@ -152,7 +159,7 @@ const updateSummary = () => {
 
 // メニュー変更時にサマリーとスケジュールを更新
 menuSelect.addEventListener('change', () => {
-  document.getElementById('selected-datetime').value = ''; // 必要な枠数が変わるため選択日時をリセット
+  (document.getElementById('selected-datetime') as HTMLInputElement).value = ''; // 必要な枠数が変わるため選択日時をリセット
   updateSummary();
   renderSchedule(currentStartDate);
 });
@@ -172,7 +179,7 @@ nextBtns.forEach(btn => {
 prevBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     currentStartDate.setDate(currentStartDate.getDate() - daysToShow);
-    const today = new Date();
+    const today: Date = new Date();
     today.setHours(0, 0, 0, 0);
     // 今日より過去には戻れないように制限
     if (currentStartDate < today) {
@@ -185,39 +192,39 @@ prevBtns.forEach(btn => {
 /**スケジュールを描写する関数である
  * 第一引数にはスケジュール開始日を渡すのである
  */
-function renderSchedule(startDate) {
+function renderSchedule(startDate: Date) {
   /** ---1. セルの初期設定など --- */
   // 本日の日付をdateJumpInputで選択するのである
   if (dateJumpInput) {
-    const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+    const startStr: string = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
     dateJumpInput.value = startStr;
   }
   // セルの初期化設定
-  const headerMonthRow = document.getElementById('schedule-header-month');
+  const headerMonthRow = document.getElementById('schedule-header-month') as HTMLTableRowElement;
   headerMonthRow.innerHTML = '';
   headerRow.innerHTML = '';
 
   // 日時セル統合
-  const thCorner = document.createElement('th');
+  const thCorner: HTMLTableCellElement = document.createElement('th');
   thCorner.rowSpan = 2;
   thCorner.textContent = '日時';
   headerMonthRow.appendChild(thCorner);
 
   bodyElement.innerHTML = '';
   /*現在の日付から14日分の日付を作成する*/
-  const dates = [];
-  let currentMonthStr = "";
-  let currentMonthTh = null;
-  let colspanCount = 0;
+  const dates: Date[] = [];
+  let currentMonthStr: string = "";
+  let currentMonthTh: HTMLTableCellElement | null = null;
+  let colspanCount: number = 0;
 
   /** ---2.セルのレンダリング--- */
   for (let i = 0; i < daysToShow; i++) {
     // 現在の日付をdatesに格納
-    const d = new Date(startDate);
+    const d: Date = new Date(startDate);
     d.setDate(startDate.getDate() + i);
     // 現在の月と曜日を変数に定義
-    const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
-    const monthStr = `${d.getFullYear()}年${d.getMonth() + 1}月`;
+    const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+    const monthStr: string = `${d.getFullYear()}年${d.getMonth() + 1}月`;
     dates.push(d);
 
     // 次月になったら新規セル作成
@@ -230,11 +237,11 @@ function renderSchedule(startDate) {
       colspanCount = 1;
     } else {
       colspanCount++;
-      currentMonthTh.colSpan = colspanCount;
+      if (currentMonthTh) currentMonthTh.colSpan = colspanCount;
     }
 
 
-    const th = document.createElement('th');
+    const th: HTMLTableCellElement = document.createElement('th');
     // 定休日の設定 月曜日と火曜日
     if (d.getDay() === 1 || d.getDay() === 2) {
       th.classList.add('holiday-text');
@@ -246,21 +253,21 @@ function renderSchedule(startDate) {
 
   /** ---1. 関数作成の準備--- */
   // 現在時刻と比較して、過去の時間をグレーアウトするための準備
-  const now = new Date();
+  const now: Date = new Date();
 
   // 選択されたメニューの所要時間を取得
-  const menuVal = menuSelect.value;
-  let duration = 1; // 未選択またはカットは1時間
+  const menuVal: string = menuSelect.value;
+  let duration: number = 1; // 未選択またはカットは1時間
   if (menuVal === 'color') duration = 2;
   if (menuVal === 'perm') duration = 3;
 
   /** ---2. セルのレンダリング--- */
   // 1枠単体が空いているか判定する関数
-  const getSlotStatus = (date, startHour) => {
-    const day = date.getDay();
-    const slotStart = new Date(date);
+  const getSlotStatus = (date: Date, startHour: number) => {
+    const day: number = date.getDay();
+    const slotStart: Date = new Date(date);
     slotStart.setHours(startHour, 0, 0, 0);
-    const slotEnd = new Date(date);
+    const slotEnd: Date = new Date(date);
     slotEnd.setHours(startHour + 1, 0, 0, 0); // 1枠は1時間
 
     // 月曜日と火曜日は定休日、それと現在時刻より前の時間は予約不可
@@ -278,21 +285,21 @@ function renderSchedule(startDate) {
 
   for (let hour = 8; hour <= 19; hour++) {
     // セルを作成しそこに時間を表示する（8:00から19:00まで）
-    const tr = document.createElement('tr');
-    const timeTd = document.createElement('td');
+    const tr: HTMLTableRowElement = document.createElement('tr');
+    const timeTd: HTMLTableCellElement = document.createElement('td');
     timeTd.textContent = `${hour}:00`;
     tr.appendChild(timeTd);
 
     dates.forEach(date => {
       /** --1. セルの作成-- */
       // セルを作成する
-      const td = document.createElement('td');
+      const td: HTMLTableCellElement = document.createElement('td');
       // 判定用の日時オブジェクトを作成（その日の該当時間）
-      const slotTime = new Date(date);
+      const slotTime: Date = new Date(date);
       slotTime.setHours(hour, 0, 0, 0);
 
       /** --2.状態表示-- */
-      const status = getSlotStatus(date, hour);
+      const status: string = getSlotStatus(date, hour);
       if (status === 'unavailable') {
         td.textContent = '-';
         td.className = 'holiday';
@@ -300,17 +307,17 @@ function renderSchedule(startDate) {
         td.textContent = '❌';
         td.className = 'holiday';
       } else {
-        const btn = document.createElement('button');
+        const btn: HTMLButtonElement = document.createElement('button');
         btn.type = 'button';
         btn.textContent = '○';
         btn.className = 'time-slot-btn';
         btn.dataset.datetime = slotTime.toISOString();
 
         // カレンダー切り替え時などに、すでに選択済みの時間ならスタイルを復元
-        const currentSelected = document.getElementById('selected-datetime').value;
+        const currentSelected: string = (document.getElementById('selected-datetime') as HTMLInputElement).value;
         if (currentSelected) {
           for (let i = 0; i < duration; i++) {
-            const targetTime = new Date(currentSelected);
+            const targetTime: Date = new Date(currentSelected);
             targetTime.setHours(targetTime.getHours() + i);
             if (targetTime.getTime() === slotTime.getTime()) {
               btn.classList.add('selected');
@@ -326,9 +333,9 @@ function renderSchedule(startDate) {
           }
 
           // 所要時間分の連続した空きがあるかチェック
-          let canBook = true;
+          let canBook: boolean = true;
           for (let i = 0; i < duration; i++) {
-            const checkHour = hour + i;
+            const checkHour: number = hour + i;
             if (checkHour > 19) {
               canBook = false;
               break;
@@ -350,15 +357,15 @@ function renderSchedule(startDate) {
 
           // 所要時間分だけボタンを青く（選択状態に）する
           for (let i = 0; i < duration; i++) {
-            const t = new Date(slotTime);
+            const t: Date = new Date(slotTime);
             t.setHours(t.getHours() + i);
-            const targetBtn = document.querySelector(`.time-slot-btn[data-datetime="${t.toISOString()}"]`);
+            const targetBtn: Element | null = document.querySelector(`.time-slot-btn[data-datetime="${t.toISOString()}"]`);
             if (targetBtn) {
               targetBtn.classList.add('selected');
             }
           }
 
-          document.getElementById('selected-datetime').value = slotTime.toISOString();
+          (document.getElementById('selected-datetime') as HTMLInputElement).value = slotTime.toISOString();
           updateSummary();
         };
         td.appendChild(btn);
@@ -371,11 +378,11 @@ function renderSchedule(startDate) {
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const customerName = nameInput.value;
-  const instagramId = instagramInput.value;
-  const phoneNumber = phoneInput.value;
-  const menuId = document.getElementById('menu-select').value;
-  const datetime = document.getElementById('selected-datetime').value;
+  const customerName: string = nameInput.value;
+  const instagramId: string = instagramInput.value;
+  const phoneNumber: string = phoneInput.value;
+  const menuId: string = (document.getElementById('menu-select') as HTMLSelectElement).value;
+  const datetime: string = (document.getElementById('selected-datetime') as HTMLInputElement).value;
 
   if (!instagramId.trim() && !phoneNumber.trim()) {
     showStatus('Instagram ID、または電話番号のどちらかを入力してください。');
@@ -388,7 +395,7 @@ form.addEventListener('submit', async (e) => {
   }
 
   try {
-    const response = await fetch('http://localhost:8000/reservations', {
+    const response: Response = await fetch('http://localhost:8000/reservations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -403,13 +410,13 @@ form.addEventListener('submit', async (e) => {
     if (!response.ok) throw new Error();
 
     // 予約完了画面への切り替え
-    const selectedDatetimeStr = summaryDatetime.textContent; // 例: "4/30(火) 10:00 〜 11:00"
+    const selectedDatetimeStr: string | null = summaryDatetime.textContent; // 例: "4/30(火) 10:00 〜 11:00"
     formContainer.style.display = 'none';
     successContainer.style.display = 'block';
-    successDatetimeMsg.innerHTML = selectedDatetimeStr;
+    successDatetimeMsg.innerHTML = selectedDatetimeStr || '';
 
     form.reset();
-    document.getElementById('selected-datetime').value = '';
+    (document.getElementById('selected-datetime') as HTMLInputElement).value = '';
     statusMessage.style.display = 'none';
     updateSummary();
     currentStartDate = new Date(); // 予約完了後は今日の日付に戻す
