@@ -1,3 +1,5 @@
+import * as inputs from "./form.ts"
+
 // 型定義
 interface Reservation {
   start: Date;
@@ -5,24 +7,135 @@ interface Reservation {
 }
 
 // 宣言である
+const formContainer = document.getElementById('form-container') as HTMLDivElement;
 const form = document.getElementById('reservation-form') as HTMLFormElement;
+
+interface MenuInfo {
+  name: string;
+  price: number;
+  duration: number; // in hours
+}
+
+const MENU_DATA: Record<string, MenuInfo> = {
+  'cut_full': { name: 'フルコース', price: 6000, duration: 1 },
+  'cut': { name: 'カット', price: 4000, duration: 1 },
+  'perm_nurepan': { name: '濡れパン', price: 9000, duration: 3 },
+  'perm_punch': { name: 'パンチパーマ', price: 9000, duration: 3 },
+  'perm_niguro': { name: 'ニグロ', price: 9000, duration: 3 },
+  'perm_gokudo': { name: '極道パーマ', price: 9000, duration: 3 },
+  'color': { name: 'カラー', price: 8000, duration: 2 },
+};
+
+let currentStep = 1;
+
+const step1Menu = document.getElementById('step-1-menu') as HTMLDivElement;
+const step2Date = document.getElementById('step-2-date') as HTMLDivElement;
+const step3Confirm = document.getElementById('step-3-confirm') as HTMLDivElement;
+
+const step2MenuName = document.getElementById('step2-menu-name') as HTMLSpanElement;
+const step2MenuPrice = document.getElementById('step2-menu-price') as HTMLSpanElement;
+const step2MenuDuration = document.getElementById('step2-menu-duration') as HTMLSpanElement;
+
+const indicatorStep1 = document.getElementById('indicator-step1') as HTMLSpanElement;
+const indicatorStep2 = document.getElementById('indicator-step2') as HTMLSpanElement;
+const indicatorStep3 = document.getElementById('indicator-step3') as HTMLSpanElement;
+
+const stickyFooter = document.getElementById('sticky-footer') as HTMLDivElement;
+const footerPrice = document.getElementById('footer-price') as HTMLSpanElement;
+const footerDatetime = document.getElementById('footer-datetime') as HTMLDivElement;
+const footerNextBtn = document.getElementById('footer-next-btn') as HTMLButtonElement;
+
+const menuRadios = document.querySelectorAll('input[name="menu"]') as NodeListOf<HTMLInputElement>;
+
+const getSelectedMenuValue = (): string | null => {
+  const selectedRadio = document.querySelector('input[name="menu"]:checked') as HTMLInputElement | null;
+  return selectedRadio ? selectedRadio.value : null;
+};
+
+// ステップ遷移ロジック
+footerNextBtn.addEventListener('click', () => {
+  if (currentStep === 1) {
+    const menuVal = getSelectedMenuValue();
+    if (!menuVal || !MENU_DATA[menuVal]) {
+      showStatus('メニューを選択してください。');
+      return;
+    }
+    
+    const menuInfo = MENU_DATA[menuVal];
+    step2MenuName.textContent = menuInfo.name;
+    step2MenuPrice.textContent = menuInfo.price.toLocaleString();
+    step2MenuDuration.textContent = menuInfo.duration.toString();
+
+    statusMessage.style.display = 'none';
+    step1Menu.classList.remove('active');
+    step2Date.classList.add('active');
+    
+    indicatorStep1.classList.remove('active');
+    indicatorStep2.classList.add('active');
+    
+    footerNextBtn.textContent = '内容確認へ';
+    currentStep = 2;
+    renderSchedule(currentStartDate);
+  } else if (currentStep === 2) {
+    const datetimeVal = (document.getElementById('selected-datetime') as HTMLInputElement).value;
+    if (!datetimeVal) {
+      showStatus('予約時間を選択してください。');
+      statusMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    statusMessage.style.display = 'none';
+    step2Date.classList.remove('active');
+    step3Confirm.classList.add('active');
+    
+    indicatorStep2.classList.remove('active');
+    indicatorStep3.classList.add('active');
+    
+    footerNextBtn.textContent = '予約を確定する';
+    currentStep = 3;
+    updateSummary();
+  } else if (currentStep === 3) {
+    const submitBtn = document.getElementById('submit-button') as HTMLButtonElement;
+    submitBtn.click();
+  }
+});
+
+indicatorStep1.addEventListener('click', () => {
+  if (currentStep === 2) {
+    step2Date.classList.remove('active');
+    step1Menu.classList.add('active');
+    indicatorStep2.classList.remove('active');
+    indicatorStep1.classList.add('active');
+    footerNextBtn.textContent = '日時確認へ';
+    currentStep = 1;
+    statusMessage.style.display = 'none';
+  } else if (currentStep === 3) {
+    step3Confirm.classList.remove('active');
+    step1Menu.classList.add('active');
+    indicatorStep3.classList.remove('active');
+    indicatorStep1.classList.add('active');
+    footerNextBtn.textContent = '日時確認へ';
+    currentStep = 1;
+    statusMessage.style.display = 'none';
+  }
+});
+
+const prevBtns = document.querySelectorAll('.prev-schedule-btn') as NodeListOf<HTMLButtonElement>;
+const dateJumpInput = document.getElementById('date-jump') as HTMLInputElement;
+const nextBtns = document.querySelectorAll('.next-schedule-btn') as NodeListOf<HTMLButtonElement>;
+
 const headerRow = document.getElementById('schedule-header') as HTMLTableRowElement;
 const bodyElement = document.getElementById('schedule-body') as HTMLTableSectionElement;
-const statusMessage = document.getElementById('status-message') as HTMLDivElement;
-const dateJumpInput = document.getElementById('date-jump') as HTMLInputElement;
-const prevBtns = document.querySelectorAll('.prev-schedule-btn') as NodeListOf<HTMLButtonElement>;
-const nextBtns = document.querySelectorAll('.next-schedule-btn') as NodeListOf<HTMLButtonElement>;
-const menuSelect = document.getElementById('menu-select') as HTMLSelectElement;
+
 const selectionSummary = document.getElementById('selection-summary') as HTMLDivElement;
 const summaryMenu = document.getElementById('summary-menu') as HTMLSpanElement;
 const summaryDatetime = document.getElementById('summary-datetime') as HTMLSpanElement;
-const nameInput = document.getElementById('customer-name') as HTMLInputElement;
-const instagramInput = document.getElementById('customer-instagram') as HTMLInputElement;
-const phoneInput = document.getElementById('customer-phone') as HTMLInputElement;
-const formContainer = document.getElementById('form-container') as HTMLDivElement;
+
+const statusMessage = document.getElementById('status-message') as HTMLDivElement;
+
 const successContainer = document.getElementById('success-container') as HTMLDivElement;
 const successDatetimeMsg = document.getElementById('success-datetime') as HTMLElement;
 const backToHomeBtn = document.getElementById('back-to-home-btn') as HTMLButtonElement;
+
 const toastMessage = document.getElementById('toast-message') as HTMLDivElement;
 
 /** 確定済みの予約データをすべて取得するurlである */
@@ -32,14 +145,14 @@ const ReservationUrl: string = 'http://localhost:8000/reservations';
 /** カレンダーに表示する最初の日である */
 let currentStartDate: Date = new Date();
 /** セルの表示日数である */
-let daysToShow: number = (window.innerWidth <= 600) ? 3 : 7; // スマホは3日、PCは7日 if文 (letに変更)
+let daysToShow: number = (window.innerWidth <= 600) ? 5 : 7; // スマホは5日、PCは7日
 /** 予約可能最大日である */
 const maxDate: Date = new Date();
 maxDate.setMonth(maxDate.getMonth() + 2); // 2ヶ月先まで予約可能と設定
 
 // 画面リサイズ時に表示日数を更新する
 window.addEventListener('resize', () => {
-  const newDaysToShow: number = window.innerWidth <= 600 ? 3 : 7;
+  const newDaysToShow: number = window.innerWidth <= 600 ? 5 : 7;
   if (newDaysToShow !== daysToShow) {
     daysToShow = newDaysToShow;
     renderSchedule(currentStartDate);
@@ -124,44 +237,42 @@ const showStatus = (text: string, isError = true) => {
  */
 const updateSummary = () => {
   /** ---1. 選択したメニューの表示--- */
-  // 選択したメニューのoption要素を代入
-  const selectedMenuOption = menuSelect.options[menuSelect.selectedIndex] as HTMLOptionElement;
-  // 選択したメニューのvalueを代入
-  const menuVal = menuSelect.value;
-  // 選択内容欄に選択したメニューの表示
-  summaryMenu.textContent = selectedMenuOption.value ? selectedMenuOption.text : '未選択';
-
-  /** --2. 選択した予約日付の表示、時間計算 */
-  // 施術時間の設定
-  let duration: number = 0;
-  if (menuVal === 'cut') { duration = 1; }
-  else if (menuVal === 'color') { duration = 2; }
-  else if (menuVal === 'perm') { duration = 3; }
-  const datetimeInput = document.getElementById('selected-datetime') as HTMLInputElement;
-  const datetimeVal: string = datetimeInput.value;
-  if (datetimeVal) {
-    const d: Date = new Date(datetimeVal);
-    const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
-    // 所要時間がある場合は終了時間を計算して表示。メニュー未選択の時は1時間とする
-    const endHour: number = d.getHours() + (duration || 1);
-    summaryDatetime.textContent = `${d.getMonth() + 1}/${d.getDate()}(${dayOfWeek}) ${d.getHours()}:00 〜 ${endHour}:00`;
+  const menuVal = getSelectedMenuValue();
+  if (menuVal && MENU_DATA[menuVal]) {
+    const menuInfo = MENU_DATA[menuVal];
+    summaryMenu.textContent = `${menuInfo.name} (${menuInfo.price.toLocaleString()}円)`;
   } else {
-    summaryDatetime.textContent = '未選択';
+    summaryMenu.textContent = '未選択';
   }
 
-  // 何かが選択されたら選択内容欄の表示
-  if (menuSelect.value || datetimeVal) {
-    selectionSummary.style.display = 'block';
+  /** --2. 選択した予約日付の表示、時間計算 */
+  const datetimeInput = document.getElementById('selected-datetime') as HTMLInputElement;
+  const datetimeVal: string = datetimeInput.value;
+  if (datetimeVal && menuVal && MENU_DATA[menuVal]) {
+    const d: Date = new Date(datetimeVal);
+    const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+    // 所要時間がある場合は終了時間を計算して表示。
+    const endHour: number = d.getHours() + MENU_DATA[menuVal].duration;
+    const datetimeText = `${d.getMonth() + 1}月${d.getDate()}日(${dayOfWeek}) ${d.getHours()}:00~${endHour}:00`;
+    summaryDatetime.textContent = datetimeText;
+    if (footerDatetime) footerDatetime.textContent = datetimeText;
   } else {
-    selectionSummary.style.display = 'none';
+    summaryDatetime.textContent = '未選択';
+    if (footerDatetime) footerDatetime.textContent = '';
   }
 };
 
 // メニュー変更時にサマリーとスケジュールを更新
-menuSelect.addEventListener('change', () => {
-  (document.getElementById('selected-datetime') as HTMLInputElement).value = ''; // 必要な枠数が変わるため選択日時をリセット
-  updateSummary();
-  renderSchedule(currentStartDate);
+menuRadios.forEach(radio => {
+  radio.addEventListener('change', () => {
+    (document.getElementById('selected-datetime') as HTMLInputElement).value = ''; // 必要な枠数が変わるため選択日時をリセット
+    const menuVal = getSelectedMenuValue();
+    if (menuVal && MENU_DATA[menuVal]) {
+      footerPrice.textContent = MENU_DATA[menuVal].price.toLocaleString();
+    }
+    updateSummary();
+    renderSchedule(currentStartDate);
+  });
 });
 
 
@@ -256,10 +367,11 @@ function renderSchedule(startDate: Date) {
   const now: Date = new Date();
 
   // 選択されたメニューの所要時間を取得
-  const menuVal: string = menuSelect.value;
-  let duration: number = 1; // 未選択またはカットは1時間
-  if (menuVal === 'color') duration = 2;
-  if (menuVal === 'perm') duration = 3;
+  const menuVal = getSelectedMenuValue();
+  let duration: number = 1; // 未選択またはデフォルトは1時間
+  if (menuVal && MENU_DATA[menuVal]) {
+    duration = MENU_DATA[menuVal].duration;
+  }
 
   /** ---2. セルのレンダリング--- */
   // 1枠単体が空いているか判定する関数
@@ -313,7 +425,7 @@ function renderSchedule(startDate: Date) {
         btn.className = 'time-slot-btn';
         btn.dataset.datetime = slotTime.toISOString();
 
-        // カレンダー切り替え時などに、すでに選択済みの時間ならスタイルを復元
+        // カレンダー切り替え時などに、選択済みの時間ならスタイルを復元
         const currentSelected: string = (document.getElementById('selected-datetime') as HTMLInputElement).value;
         if (currentSelected) {
           for (let i = 0; i < duration; i++) {
@@ -324,10 +436,10 @@ function renderSchedule(startDate: Date) {
             }
           }
         }
-        // ボタンを押した時、入力欄を記述してない場合のエラー
+        // ボタンを押した時、メニューが選択されてない場合のエラー表示
         btn.onclick = () => {
-          if (!nameInput.value.trim() || (!instagramInput.value.trim() && !phoneInput.value.trim()) || !menuSelect.value) {
-            showStatus('お名前、連絡先、メニューを入力・選択してから時間を選択してください。');
+          if (!getSelectedMenuValue()) {
+            showStatus('メニューを選択してから時間を選択してください。');
             statusMessage.scrollIntoView({ behavior: 'smooth', block: 'center' }); // スマホで気づくようにエラー位置へスクロール
             return;
           }
@@ -378,10 +490,10 @@ function renderSchedule(startDate: Date) {
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const customerName: string = nameInput.value;
-  const instagramId: string = instagramInput.value;
-  const phoneNumber: string = phoneInput.value;
-  const menuId: string = (document.getElementById('menu-select') as HTMLSelectElement).value;
+  const customerName: string = inputs.name.value;
+  const instagramId: string = inputs.instagram.value;
+  const phoneNumber: string = inputs.phone.value;
+  const menuId: string = getSelectedMenuValue() || '';
   const datetime: string = (document.getElementById('selected-datetime') as HTMLInputElement).value;
 
   if (!instagramId.trim() && !phoneNumber.trim()) {
@@ -406,7 +518,6 @@ form.addEventListener('submit', async (e) => {
         reservation_date: datetime
       })
     });
-
     if (!response.ok) throw new Error();
 
     // 予約完了画面への切り替え
@@ -414,9 +525,18 @@ form.addEventListener('submit', async (e) => {
     formContainer.style.display = 'none';
     successContainer.style.display = 'block';
     successDatetimeMsg.innerHTML = selectedDatetimeStr || '';
+    stickyFooter.style.display = 'none';
 
     form.reset();
     (document.getElementById('selected-datetime') as HTMLInputElement).value = '';
+    footerPrice.textContent = '0';
+    footerNextBtn.textContent = '日時確認へ';
+    currentStep = 1;
+    indicatorStep3.classList.remove('active');
+    indicatorStep1.classList.add('active');
+    step3Confirm.classList.remove('active');
+    step1Menu.classList.add('active');
+    
     statusMessage.style.display = 'none';
     updateSummary();
     currentStartDate = new Date(); // 予約完了後は今日の日付に戻す
@@ -430,4 +550,14 @@ form.addEventListener('submit', async (e) => {
 backToHomeBtn.addEventListener('click', () => {
   successContainer.style.display = 'none';
   formContainer.style.display = 'block';
+  stickyFooter.style.display = 'flex';
+  
+  // 初期状態を明示
+  currentStep = 1;
+  indicatorStep1.classList.add('active');
+  indicatorStep2.classList.remove('active');
+  indicatorStep3.classList.remove('active');
+  step1Menu.classList.add('active');
+  step2Date.classList.remove('active');
+  step3Confirm.classList.remove('active');
 });

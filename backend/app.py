@@ -118,6 +118,7 @@ def get_history():
 def create_reservation(req: ReservationRequest):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+    print(req)
     
     try:
         if not req.instagram_id and not req.phone_number:
@@ -158,7 +159,9 @@ def create_reservation(req: ReservationRequest):
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_msg = traceback.format_exc()
         conn.rollback()
-        raise HTTPException(status_code=500, detail="サーバーエラーが発生しました。")
+        raise HTTPException(status_code=500, detail=f"サーバーエラーが発生しました。詳細: {error_msg}")
     finally:
         conn.close()
