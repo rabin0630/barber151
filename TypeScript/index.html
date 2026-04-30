@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
+  <!-- ヘッダー -->
   <header class="site-header">
     <h1>barber151</h1>
     <nav class="header-nav">
@@ -104,12 +105,12 @@
 
         <!-- Step 2: 日時選択 -->
         <div id="step-2-date" class="step-content">
+          <div id="selected-menu-info" class="selected-menu-info" style="padding: 1.5rem; background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px;">
+            <p style="margin: 0 0 0.5rem 0; font-weight: bold; font-size: 1.1rem;">メニュー: <span id="step2-menu-name" style="color: #2563eb;">-</span></p>
+            <p style="margin: 0 0 0.5rem 0; font-weight: bold; font-size: 1.1rem;">料金: <span id="step2-menu-price" style="color: #2563eb;">-</span> 円(税込)</p>
+            <p style="margin: 0; font-weight: bold; font-size: 1.1rem;">施術予測時間: <span id="step2-menu-duration" style="color: #2563eb;">-</span> 時間</p>
+          </div>
           <div class="step2-header-sticky">
-            <div class="selected-menu-info" style="margin-bottom: 1.5rem; padding: 1.5rem; background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px;">
-              <p style="margin: 0 0 0.5rem 0; font-weight: bold; font-size: 1.1rem;">メニュー: <span id="step2-menu-name" style="color: #2563eb;">-</span></p>
-              <p style="margin: 0 0 0.5rem 0; font-weight: bold; font-size: 1.1rem;">料金: <span id="step2-menu-price" style="color: #2563eb;">-</span> 円(税込)</p>
-              <p style="margin: 0; font-weight: bold; font-size: 1.1rem;">施術予測時間: <span id="step2-menu-duration" style="color: #2563eb;">-</span> 時間</p>
-            </div>
             <h2>日時を選択</h2>
             <div id="control-wrapper" class="control-wrapper">
               <div class="schedule-nav">

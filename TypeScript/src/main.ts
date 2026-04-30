@@ -55,6 +55,7 @@ const getSelectedMenuValue = (): string | null => {
 // ステップ遷移ロジック
 footerNextBtn.addEventListener('click', () => {
   if (currentStep === 1) {
+    //** --メニューを選択しなかったら返す-- */
     const menuVal = getSelectedMenuValue();
     if (!menuVal || !MENU_DATA[menuVal]) {
       showStatus('メニューを選択してください。');
@@ -76,6 +77,9 @@ footerNextBtn.addEventListener('click', () => {
     footerNextBtn.textContent = '内容確認へ';
     currentStep = 2;
     renderSchedule(currentStartDate);
+    
+    // Step2が表示された直後にオフセットを再計算
+    requestAnimationFrame(() => updateStickyHeaderOffset());
   } else if (currentStep === 2) {
     const datetimeVal = (document.getElementById('selected-datetime') as HTMLInputElement).value;
     if (!datetimeVal) {
@@ -108,6 +112,7 @@ indicatorStep1.addEventListener('click', () => {
     footerNextBtn.textContent = '日時確認へ';
     currentStep = 1;
     statusMessage.style.display = 'none';
+    updateStickyHeaderOffset();
   } else if (currentStep === 3) {
     step3Confirm.classList.remove('active');
     step1Menu.classList.add('active');
@@ -116,6 +121,7 @@ indicatorStep1.addEventListener('click', () => {
     footerNextBtn.textContent = '日時確認へ';
     currentStep = 1;
     statusMessage.style.display = 'none';
+    updateStickyHeaderOffset();
   }
 });
 
@@ -486,6 +492,9 @@ function renderSchedule(startDate: Date) {
     });
     bodyElement.appendChild(tr);
   }
+  
+  // スケジュール描画後にヘッダー位置を再計算
+  requestAnimationFrame(() => updateStickyHeaderOffset());
 }
 
 form.addEventListener('submit', async (e) => {
@@ -560,4 +569,49 @@ backToHomeBtn.addEventListener('click', () => {
   step1Menu.classList.add('active');
   step2Date.classList.remove('active');
   step3Confirm.classList.remove('active');
+  updateStickyHeaderOffset();
 });
+
+// スクロール追従時のオフセット計算処理
+function updateStickyHeaderOffset() {
+  const stepIndicator = document.querySelector('.step-indicator') as HTMLElement;
+  const menuInfo = document.querySelector('#selected-menu-info') as HTMLElement;
+  const monthRow = document.getElementById('schedule-header-month') as HTMLTableRowElement;
+  
+  let indicatorHeight = 0;
+  if (stepIndicator) {
+    indicatorHeight = stepIndicator.getBoundingClientRect().height;
+  }
+  
+  // メニュー表示エリアの追従位置をステップインジケーターの高さにぴったり合わせる
+  document.documentElement.style.setProperty('--sticky-menu-top', `${indicatorHeight}px`);
+  
+  // 上段ヘッダー（年月）の高さを取得（未描画時はデフォルト28px）
+  let monthRowHeight = 28;
+  if (monthRow) {
+    const rectHeight = monthRow.getBoundingClientRect().height;
+    if (rectHeight > 0) {
+      monthRowHeight = rectHeight;
+    }
+  }
+
+  const isMobile = window.innerWidth <= 600;
+  if (!isMobile) {
+    // デスクトップでは表自体が独立してスクロールするため、ヘッダー位置は0
+    document.documentElement.style.setProperty('--sticky-table-header-month-top', '0px');
+    document.documentElement.style.setProperty('--sticky-table-header-date-top', `${monthRowHeight}px`);
+    return;
+  }
+  
+  let offset = indicatorHeight;
+  // Step2が表示されている場合のみメニュー表示エリアの高さを含める
+  if (menuInfo && menuInfo.offsetParent !== null) {
+    offset += menuInfo.getBoundingClientRect().height;
+  }
+  
+  document.documentElement.style.setProperty('--sticky-table-header-month-top', `${offset}px`);
+  document.documentElement.style.setProperty('--sticky-table-header-date-top', `${offset + monthRowHeight}px`);
+}
+
+window.addEventListener('resize', updateStickyHeaderOffset);
+document.addEventListener('DOMContentLoaded', updateStickyHeaderOffset);

@@ -127,7 +127,6 @@ input[type="number"]::-webkit-inner-spin-button {
   display: none;
   flex-direction: column;
   height: 100%;
-  overflow-y: hidden; /* コンテナ全体ではなく、必要な部分だけスクロールさせる */
 }
 
 .step-content.active {
@@ -144,8 +143,16 @@ input[type="number"]::-webkit-inner-spin-button {
   padding-top: 5px;
   padding-bottom: 5px;
   border-bottom: 1px solid #f3f4f6;
+  margin-top: 1.5rem;
   margin-bottom: 10px;
   flex-shrink: 0; /* 縮まないようにする */
+  
+}
+.selected-menu-info {
+  position: sticky;
+  top: var(--sticky-menu-top, 48px); /* JSで動的に計算 */
+  z-index: 100;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* 追従時に浮いているように見せる */
 }
 
 .schedule-wrapper {
@@ -173,7 +180,7 @@ th, td {
 }
 
 th {
-  background-color: #f3f4f6;
+  background-color: #ffffff; /* 追従時の背景を白に */
   position: sticky;
   z-index: 10;
   vertical-align: middle;
@@ -181,13 +188,20 @@ th {
 
 /* 年月行（上段）の追従設定 */
 #schedule-header-month th {
-  top: 0;
+  top: var(--sticky-table-header-month-top, 0px);
   height: 28px;
+  box-shadow: inset 0 1px 0 #e5e7eb; /* スクロール時に上罫線が消えるのを防ぐ */
+}
+
+/* 縦に結合されている「日時」セルは上下両方の罫線を保持する */
+#schedule-header-month th[rowspan] {
+  box-shadow: inset 0 1px 0 #e5e7eb, inset 0 -1px 0 #e5e7eb;
 }
 
 /* 日付曜日行（下段）の追従設定 */
 #schedule-header th {
-  top: 28px; /* 上段の高さ分下げる */
+  top: var(--sticky-table-header-date-top, 28px);
+  box-shadow: inset 0 -1px 0 #e5e7eb; /* スクロール時に下罫線が消えるのを防ぐ */
 }
 
 /* 1列目（日時・時間）の幅を固定し、残りの日付列を均等にする */
@@ -420,6 +434,7 @@ tbody tr:nth-child(odd) td:not(.holiday):not(.booked-cell) {
 
   .main-body {
     padding: 1rem;
+    height: auto; /* スマホでは全体スクロールにするため */
   }
   
   .reservation-container {
@@ -427,6 +442,11 @@ tbody tr:nth-child(odd) td:not(.holiday):not(.booked-cell) {
     box-shadow: none;
     padding: 0;
     background-color: transparent;
+    height: auto; /* スマホでは全体スクロールにするため */
+  }
+
+  .step-content {
+    height: auto;
   }
   
   table {
@@ -465,6 +485,9 @@ tbody tr:nth-child(odd) td:not(.holiday):not(.booked-cell) {
   border-bottom: 1px solid #e5e7eb;
   font-size: 0.85rem;
   font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 .step {
   color: #9ca3af;
