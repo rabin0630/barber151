@@ -133,10 +133,6 @@ input[type="number"]::-webkit-inner-spin-button {
   display: flex;
 }
 
-#step-2-date {
-  /* overflow-y: hidden; 削除: step-contentのスクロールに任せる */
-}
-
 .step2-header-sticky {
   /* position: stickyは不要になります（コンテナ固定のため） */
   background-color: #ffffff;
@@ -574,7 +570,7 @@ tbody tr:nth-child(odd) td:not(.holiday):not(.booked-cell) {
   color: #2563eb;
 }
 
-/* 追従フッター */
+/* ======== 追従フッター ======== */
 .sticky-footer {
   position: fixed;
   bottom: 0;
@@ -591,33 +587,39 @@ tbody tr:nth-child(odd) td:not(.holiday):not(.booked-cell) {
   z-index: 1000;
 }
 
-.footer-info-wrapper {
+/* 戻るボタンのスタイル */
+.footer-back-btn {
   display: flex;
-  flex-direction: column;
-}
-
-.footer-datetime {
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  background-color: transparent;
   color: #ffffff;
-  font-size: 0.875rem; /* 1.25remの70% (1.25 * 0.7 = 0.875) */
-  font-weight: normal; /* 日時は少し軽めに */
-  margin-top: 2px;
-}
-
-.footer-price-wrapper {
-  font-size: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 1rem;
   font-weight: bold;
-  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
 }
+
+.footer-back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.footer-action-wrapper {
+  flex-shrink: 0;
+}
+
+
 
 .tax-text {
   font-size: 0.8rem;
   color: #e5e7eb;
   font-weight: normal;
   margin-left: 4px;
-}
-
-.footer-action-wrapper {
-  flex-shrink: 0;
 }
 
 .footer-btn {

@@ -41,8 +41,7 @@ const indicatorStep2 = document.getElementById('indicator-step2') as HTMLSpanEle
 const indicatorStep3 = document.getElementById('indicator-step3') as HTMLSpanElement;
 
 const stickyFooter = document.getElementById('sticky-footer') as HTMLDivElement;
-const footerPrice = document.getElementById('footer-price') as HTMLSpanElement;
-const footerDatetime = document.getElementById('footer-datetime') as HTMLDivElement;
+const footerBackBtn = document.getElementById('footer-back-btn') as HTMLButtonElement;
 const footerNextBtn = document.getElementById('footer-next-btn') as HTMLButtonElement;
 
 const menuRadios = document.querySelectorAll('input[name="menu"]') as NodeListOf<HTMLInputElement>;
@@ -75,6 +74,7 @@ footerNextBtn.addEventListener('click', () => {
     indicatorStep2.classList.add('active');
     
     footerNextBtn.textContent = '内容確認へ';
+    footerBackBtn.style.visibility = 'visible'; // 戻るボタンを表示
     currentStep = 2;
     renderSchedule(currentStartDate);
     
@@ -103,23 +103,30 @@ footerNextBtn.addEventListener('click', () => {
   }
 });
 
-indicatorStep1.addEventListener('click', () => {
+// フッターの戻るボタン（←）の制御
+footerBackBtn.addEventListener('click', () => {
   if (currentStep === 2) {
     step2Date.classList.remove('active');
     step1Menu.classList.add('active');
+    
     indicatorStep2.classList.remove('active');
     indicatorStep1.classList.add('active');
-    footerNextBtn.textContent = '日時確認へ';
+    
+    footerNextBtn.textContent = '日時選択へ';
+    footerBackBtn.style.visibility = 'hidden'; // Step1では戻るボタンを非表示
     currentStep = 1;
     statusMessage.style.display = 'none';
     updateStickyHeaderOffset();
   } else if (currentStep === 3) {
     step3Confirm.classList.remove('active');
-    step1Menu.classList.add('active');
+    step2Date.classList.add('active');
+    
     indicatorStep3.classList.remove('active');
-    indicatorStep1.classList.add('active');
-    footerNextBtn.textContent = '日時確認へ';
-    currentStep = 1;
+    indicatorStep2.classList.add('active');
+    
+    footerNextBtn.textContent = '内容確認へ';
+    // 戻るボタンは表示のまま
+    currentStep = 2;
     statusMessage.style.display = 'none';
     updateStickyHeaderOffset();
   }
@@ -261,10 +268,8 @@ const updateSummary = () => {
     const endHour: number = d.getHours() + MENU_DATA[menuVal].duration;
     const datetimeText = `${d.getMonth() + 1}月${d.getDate()}日(${dayOfWeek}) ${d.getHours()}:00~${endHour}:00`;
     summaryDatetime.textContent = datetimeText;
-    if (footerDatetime) footerDatetime.textContent = datetimeText;
   } else {
     summaryDatetime.textContent = '未選択';
-    if (footerDatetime) footerDatetime.textContent = '';
   }
 };
 
@@ -272,10 +277,6 @@ const updateSummary = () => {
 menuRadios.forEach(radio => {
   radio.addEventListener('change', () => {
     (document.getElementById('selected-datetime') as HTMLInputElement).value = ''; // 必要な枠数が変わるため選択日時をリセット
-    const menuVal = getSelectedMenuValue();
-    if (menuVal && MENU_DATA[menuVal]) {
-      footerPrice.textContent = MENU_DATA[menuVal].price.toLocaleString();
-    }
     updateSummary();
     renderSchedule(currentStartDate);
   });
@@ -538,7 +539,6 @@ form.addEventListener('submit', async (e) => {
 
     form.reset();
     (document.getElementById('selected-datetime') as HTMLInputElement).value = '';
-    footerPrice.textContent = '0';
     footerNextBtn.textContent = '日時確認へ';
     currentStep = 1;
     indicatorStep3.classList.remove('active');
@@ -566,6 +566,9 @@ backToHomeBtn.addEventListener('click', () => {
   indicatorStep1.classList.add('active');
   indicatorStep2.classList.remove('active');
   indicatorStep3.classList.remove('active');
+  form.reset();
+  
+  // 画面の初期状態をリセット
   step1Menu.classList.add('active');
   step2Date.classList.remove('active');
   step3Confirm.classList.remove('active');
