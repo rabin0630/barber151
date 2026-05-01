@@ -46,6 +46,7 @@ const footerNextBtn = document.getElementById('footer-next-btn') as HTMLButtonEl
 
 const menuRadios = document.querySelectorAll('input[name="menu"]') as NodeListOf<HTMLInputElement>;
 
+/** --選択したメニューの値を取得する関数-- */
 const getSelectedMenuValue = (): string | null => {
   const selectedRadio = document.querySelector('input[name="menu"]:checked') as HTMLInputElement | null;
   return selectedRadio ? selectedRadio.value : null;
@@ -77,6 +78,7 @@ footerNextBtn.addEventListener('click', () => {
     footerBackBtn.style.visibility = 'visible'; // 戻るボタンを表示
     currentStep = 2;
     renderSchedule(currentStartDate);
+    updateNextBtnState();
     
     // Step2が表示された直後にオフセットを再計算
     requestAnimationFrame(() => updateStickyHeaderOffset());
@@ -97,6 +99,7 @@ footerNextBtn.addEventListener('click', () => {
     footerNextBtn.textContent = '予約を確定する';
     currentStep = 3;
     updateSummary();
+    updateNextBtnState();
   } else if (currentStep === 3) {
     const submitBtn = document.getElementById('submit-button') as HTMLButtonElement;
     submitBtn.click();
@@ -117,6 +120,7 @@ footerBackBtn.addEventListener('click', () => {
     currentStep = 1;
     statusMessage.style.display = 'none';
     updateStickyHeaderOffset();
+    updateNextBtnState();
   } else if (currentStep === 3) {
     step3Confirm.classList.remove('active');
     step2Date.classList.add('active');
@@ -129,6 +133,7 @@ footerBackBtn.addEventListener('click', () => {
     currentStep = 2;
     statusMessage.style.display = 'none';
     updateStickyHeaderOffset();
+    updateNextBtnState();
   }
 });
 
@@ -244,6 +249,26 @@ const showStatus = (text: string, isError = true) => {
 };
 
 /**
+ * 必須項目が入力されているか確認し、次へ進むボタンを無効化/有効化する関数である
+ */
+const updateNextBtnState = () => {
+  let isEnabled:boolean = false;
+  if (currentStep === 1) {
+    const menuVal = getSelectedMenuValue();
+    isEnabled = !!menuVal;
+  } else if (currentStep === 2) {
+    const datetimeVal = (document.getElementById('selected-datetime') as HTMLInputElement).value;
+    isEnabled = !!datetimeVal;
+  } else if (currentStep === 3) {
+    const isNameFilled = inputs.name.value.trim() !== '';
+    const isInstagramFilled = inputs.instagram.value.trim() !== '';
+    const isPhoneFilled = inputs.phone.value.trim() !== '';
+    isEnabled = isNameFilled && (isInstagramFilled || isPhoneFilled);
+  }
+  footerNextBtn.disabled = !isEnabled;
+};
+
+/**
  * 選択したメニューを選択内容欄に表示する関数である
  * 1. 選択したメニューの表示
  * 2. 選択した予約日付の表示、時間計算
@@ -279,7 +304,12 @@ menuRadios.forEach(radio => {
     (document.getElementById('selected-datetime') as HTMLInputElement).value = ''; // 必要な枠数が変わるため選択日時をリセット
     updateSummary();
     renderSchedule(currentStartDate);
+    updateNextBtnState();
   });
+});
+
+[inputs.name, inputs.instagram, inputs.phone].forEach(input => {
+  input.addEventListener('input', updateNextBtnState);
 });
 
 
@@ -486,6 +516,7 @@ function renderSchedule(startDate: Date) {
 
           (document.getElementById('selected-datetime') as HTMLInputElement).value = slotTime.toISOString();
           updateSummary();
+          updateNextBtnState();
         };
         td.appendChild(btn);
       }
@@ -573,6 +604,7 @@ backToHomeBtn.addEventListener('click', () => {
   step2Date.classList.remove('active');
   step3Confirm.classList.remove('active');
   updateStickyHeaderOffset();
+  updateNextBtnState();
 });
 
 // スクロール追従時のオフセット計算処理
@@ -617,4 +649,7 @@ function updateStickyHeaderOffset() {
 }
 
 window.addEventListener('resize', updateStickyHeaderOffset);
-document.addEventListener('DOMContentLoaded', updateStickyHeaderOffset);
+document.addEventListener('DOMContentLoaded', () => {
+  updateStickyHeaderOffset();
+  updateNextBtnState(); // 初期ロード時の状態をセット
+});

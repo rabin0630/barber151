@@ -489,12 +489,6 @@ tbody tr:nth-child(odd) td:not(.holiday):not(.booked-cell) {
   color: #9ca3af;
   transition: opacity 0.2s;
 }
-#indicator-step1 {
-  cursor: pointer;
-}
-#indicator-step1:hover {
-  opacity: 0.7;
-}
 .step.active {
   color: #2563eb;
 }
