@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>barber151 - 予約</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="site-header">
+    <a href="top.html"><h1>barber151</h1></a>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link active">予約画面</a>
+      <a href="admin.html" class="nav-link">管理者画面</a>
+    </nav>
+  </header>
+
+  <!-- ステップインジケーター -->
+  <div class="step-indicator">
+    <span class="step active" id="indicator-step1">①メニュー選択</span>
+    <span class="step-arrow">→</span>
+    <span class="step" id="indicator-step2">②日時選択</span>
+    <span class="step-arrow">→</span>
+    <span class="step" id="indicator-step3">③内容確認</span>
+  </div>
+
+  <main class="main-body">
+    <div class="reservation-container" id="form-container">
+      
+      <form id="reservation-form">
+        <!-- Step 1: メニュー選択 -->
+        <div id="step-1-menu" class="step-content active">
+          
+          <div class="menu-category">
+            <h3 class="category-title">
+              <img src="./src/images/barbershop.png" alt="" class="category-icon" width="30" height="30">
+              カット
+            </h3>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="cut_full" required>
+              <span class="menu-details">
+                <span class="menu-name">フルコース</span>
+                <span class="menu-price">6,000円</span>
+              </span>
+            </label>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="cut">
+              <span class="menu-details">
+                <span class="menu-name">カット</span>
+                <span class="menu-price">4,000円</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="menu-category">
+            <h3 class="category-title">
+              <img src="./src/images/barber-chair.png" alt="" class="category-icon" width="30" height="30">
+              パーマ
+            </h3>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="perm_nurepan">
+              <span class="menu-details">
+                <span class="menu-name">濡れパン</span>
+                <span class="menu-price">9,000円</span>
+              </span>
+            </label>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="perm_punch">
+              <span class="menu-details">
+                <span class="menu-name">パンチパーマ</span>
+                <span class="menu-price">9,000円</span>
+              </span>
+            </label>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="perm_niguro">
+              <span class="menu-details">
+                <span class="menu-name">ニグロ</span>
+                <span class="menu-price">9,000円</span>
+              </span>
+            </label>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="perm_gokudo">
+              <span class="menu-details">
+                <span class="menu-name">極道パーマ</span>
+                <span class="menu-price">9,000円</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="menu-category">
+            <h3 class="category-title">
+              <img src="./src/images/hairdresser.png" alt="" class="category-icon" width="30" height="30">
+              カラー
+            </h3>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="color">
+              <span class="menu-details">
+                <span class="menu-name">カラー</span>
+                <span class="menu-price">8,000円</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Step 2: 日時選択 -->
+        <div id="step-2-date" class="step-content">
+          <div id="selected-menu-info" class="selected-menu-info" style="padding: 1.5rem; background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px;">
+            <p style="margin: 0 0 0.5rem 0; font-weight: bold; font-size: 1.1rem;">メニュー: <span id="step2-menu-name" style="color: #2563eb;">-</span></p>
+            <p style="margin: 0 0 0.5rem 0; font-weight: bold; font-size: 1.1rem;">料金: <span id="step2-menu-price" style="color: #2563eb;">-</span> 円(税込)</p>
+            <p style="margin: 0; font-weight: bold; font-size: 1.1rem;">施術予測時間: <span id="step2-menu-duration" style="color: #2563eb;">-</span> 時間</p>
+          </div>
+          <div class="step2-header-sticky">
+            <h2>日時を選択</h2>
+            <div id="control-wrapper" class="control-wrapper">
+              <div class="schedule-nav">
+                <button type="button" class="nav-btn prev-schedule-btn">←</button>
+                <input type="date" id="date-jump" class="date-jump-input">
+                <button type="button" class="nav-btn next-schedule-btn">→</button>
+              </div>
+            </div>
+          </div>
+          <div id="schedule-wrapper" class="schedule-wrapper">
+            <table id="schedule-table">
+              <thead>
+                <tr id="schedule-header-month"></tr>
+                <tr id="schedule-header"></tr>
+              </thead>
+              <tbody id="schedule-body"></tbody>
+            </table>
+            <input type="hidden" id="selected-datetime" required>
+          </div>
+        </div>
+        
+        <!-- Step 3: 内容確認 -->
+        <div id="step-3-confirm" class="step-content">
+          <h2>内容確認</h2>
+          <div id="selection-summary" class="selection-summary">
+            <p>メニュー: <span id="summary-menu" style="color: #2563eb;">未選択</span></p>
+            <p>日時: <span id="summary-datetime" style="color: #2563eb;">未選択</span></p>
+          </div>
+
+          <div class="form-group">
+            <label for="customer-name">お名前</label>
+            <input type="text" id="customer-name" required placeholder="例: 山田 太郎">
+          </div>
+
+          <div class="form-group">
+            <label for="customer-instagram">Instagram ID（任意）</label>
+            <input type="text" id="customer-instagram" placeholder="例: @barber151" pattern="^[a-zA-Z0-9_.]+$" style="ime-mode: disabled;" >
+          </div>
+
+          <div class="form-group">
+            <label for="customer-phone">電話番号（任意）</label>
+            <input 
+              type="tel"
+              id="customer-phone"
+              placeholder="電話番号"
+              maxlength="11">
+            <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem; margin-bottom: 0;">※Instagram ID、または電話番号のどちらかを必ず入力してください</p>
+          </div>
+          
+          <button type="submit" id="submit-button" class="submit-btn" style="display: none;">予約を確定する</button>
+        </div>
+
+        <div id="status-message" class="status-message" role="alert" style="display: none;"></div>
+      </form>
+    </div>
+
+    <!-- 予約完了画面（初期状態では非表示） -->
+    <div class="reservation-container" id="success-container" style="display: none;">
+      <h2>予約完了</h2>
+      <p style="text-align: center; margin-top: 1.5rem; margin-bottom: 2rem;">
+        予約を完了しました。<br>この時間です：<br>
+        <strong id="success-datetime" style="font-size: 1.2rem; color: #2563eb; display: inline-block; margin-top: 0.5rem;"></strong>
+      </p>
+      <button type="button" id="back-to-home-btn" class="submit-btn">ホームに戻る</button>
+    </div>
+  </main>
+
+  <!-- 追従フッター -->
+  <div id="sticky-footer" class="sticky-footer">
+    <button type="button" id="footer-back-btn" class="footer-btn footer-back-btn" style="visibility: hidden;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      戻る
+    </button>
+    <div class="footer-action-wrapper">
+      <button type="button" id="footer-next-btn" class="footer-btn">日時確認へ</button>
+    </div>
+  </div>
+
+  <!-- 画面中央のトーストメッセージ -->
+  <div id="toast-message" class="toast-message" style="display: none;"></div>
+  
+  <script type="module" src="/src/form.ts"></script>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
