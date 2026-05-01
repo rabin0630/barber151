@@ -500,11 +500,12 @@ tbody tr:nth-child(odd) td:not(.holiday):not(.booked-cell) {
 .category-title {
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
-  font-size: 1.1rem;
+  font-size: 1.7rem;
   color: #111827;
-  border-left: 4px solid #2563eb;
-  padding-left: 0.5rem;
   display: flex;
+  justify-content: center;
+  text-align: center;
+  padding-left: 0.5rem;
   align-items: center;
   gap: 0.4rem;
 }
