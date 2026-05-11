@@ -3,7 +3,7 @@ import * as inputs from "./form.ts"
 // ==========================================
 // 1. HTML DOM取得
 // ==========================================
-// 宣言である
+
 const formContainer = document.getElementById('form-container') as HTMLDivElement;
 const form = document.getElementById('reservation-form') as HTMLFormElement;
 
@@ -35,13 +35,11 @@ const bodyElement = document.getElementById('schedule-body') as HTMLTableSection
 const summaryMenu = document.getElementById('summary-menu') as HTMLSpanElement;
 const summaryDatetime = document.getElementById('summary-datetime') as HTMLSpanElement;
 
-const statusMessage = document.getElementById('status-message') as HTMLDivElement;
+
 
 const successContainer = document.getElementById('success-container') as HTMLDivElement;
 const successDatetimeMsg = document.getElementById('success-datetime') as HTMLElement;
 const backToHomeBtn = document.getElementById('back-to-home-btn') as HTMLButtonElement;
-
-const toastMessage = document.getElementById('toast-message') as HTMLDivElement;
 
 // ==========================================
 // 2. 型定義
@@ -60,6 +58,7 @@ interface MenuInfo {
 // ==========================================
 // 3. 定数
 // ==========================================
+
 const MENU_DATA: Record<string, MenuInfo> = {
   'cut_full': { name: 'フルコース', price: 6000, duration: 1 },
   'cut': { name: 'カット', price: 4000, duration: 1 },
@@ -91,8 +90,6 @@ let daysToShow: number = (window.innerWidth <= 600) ? 5 : 7; // スマホは5日
 /** 決定した予約の開始時間と終了時間を格納している配列である */
 let bookedReservations: Reservation[] = [];
 
-let toastTimeout: ReturnType<typeof setTimeout>;
-
 // ==========================================
 // 5. 関数
 // ==========================================
@@ -122,33 +119,6 @@ async function loadAndRenderSchedule() {
   renderSchedule(currentStartDate);
 }
 
-/** --エラーメッセージを表示する関数である--
- * 第一引数はテキストの挿入
- */
-const showStatus = (text: string, isError = true) => {
-  // --1.statusMessageの表示設定--
-  statusMessage.textContent = text;
-  statusMessage.style.display = 'block';
-  statusMessage.style.backgroundColor = isError ? '#fee2e2' : '#dcfce7';
-  statusMessage.style.color = isError ? '#991b1b' : '#166534';
-
-  // 画面中央のトーストにも表示して5秒で消す（3秒後から2秒かけてフェードアウト）
-  // --2.エラーポップアップの表示設定--
-  toastMessage.textContent = text;
-  toastMessage.style.display = 'block';
-  toastMessage.style.transition = 'none'; // パッと表示させる
-  toastMessage.style.opacity = '1';
-
-  if (toastTimeout) clearTimeout(toastTimeout); // エラーが連続して起きた場合のバグ処理
-  toastTimeout = setTimeout(() => {
-    toastMessage.style.transition = 'opacity 2s ease-out'; // 2秒かけて透明にする
-    toastMessage.style.opacity = '0';
-    setTimeout(() => {
-      if (toastMessage.style.opacity === '0') toastMessage.style.display = 'none';
-    }, 2000);
-  }, 3000);
-};
-
 /**
  * 必須項目が入力されているか確認し、次へ進むボタンを無効化/有効化する関数である
  */
@@ -177,6 +147,7 @@ const updateNextBtnState = () => {
 const updateSummary = () => {
   /** ---1. 選択したメニューの表示--- */
   const menuVal = getSelectedMenuValue();
+  
   if (menuVal && MENU_DATA[menuVal]) {
     const menuInfo = MENU_DATA[menuVal];
     summaryMenu.textContent = `${menuInfo.name} (${menuInfo.price.toLocaleString()}円)`;
@@ -203,25 +174,24 @@ const updateSummary = () => {
  * 第一引数にはスケジュール開始日を渡すのである
  */
 function renderSchedule(startDate: Date) {
-  /** ---1. セルの初期設定など --- */
-  // 本日の日付をdateJumpInputで選択するのである
+
   if (dateJumpInput) {
     const startStr: string = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
     dateJumpInput.value = startStr;
   }
-  // セルの初期化設定
+  
   const headerMonthRow = document.getElementById('schedule-header-month') as HTMLTableRowElement;
   headerMonthRow.innerHTML = '';
   headerRow.innerHTML = '';
 
-  // 日時セル統合
+  
   const thCorner: HTMLTableCellElement = document.createElement('th');
   thCorner.rowSpan = 2;
   thCorner.textContent = '日時';
   headerMonthRow.appendChild(thCorner);
 
   bodyElement.innerHTML = '';
-  /*現在の日付から14日分の日付を作成する*/
+  
   const dates: Date[] = [];
   let currentMonthStr: string = "";
   let currentMonthTh: HTMLTableCellElement | null = null;
@@ -229,15 +199,15 @@ function renderSchedule(startDate: Date) {
 
   /** ---2.セルのレンダリング--- */
   for (let i = 0; i < daysToShow; i++) {
-    // 現在の日付をdatesに格納
+    
     const d: Date = new Date(startDate);
     d.setDate(startDate.getDate() + i);
-    // 現在の月と曜日を変数に定義
+    
     const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
     const monthStr: string = `${d.getFullYear()}年${d.getMonth() + 1}月`;
     dates.push(d);
 
-    // 次月になったら新規セル作成
+    
     if (monthStr !== currentMonthStr) {
       currentMonthTh = document.createElement('th');
       currentMonthTh.className = 'th-year-month';
@@ -252,20 +222,20 @@ function renderSchedule(startDate: Date) {
 
 
     const th: HTMLTableCellElement = document.createElement('th');
-    // 定休日の設定 月曜日と火曜日
+    
     if (d.getDay() === 1 || d.getDay() === 2) {
       th.classList.add('holiday-text');
     }
-    // 日付と曜日の設定
+    
     th.innerHTML = `<div class="th-date-num">${d.getDate()}</div><div class="th-day-of-week">${dayOfWeek}</div>`;
     headerRow.appendChild(th);
   }
 
   /** ---1. 関数作成の準備--- */
-  // 現在時刻と比較して、過去の時間をグレーアウトするための準備
+  
   const now: Date = new Date();
 
-  // 選択されたメニューの所要時間を取得
+  
   const menuVal = getSelectedMenuValue();
   let duration: number = 1; // 未選択またはデフォルトは1時間
   if (menuVal && MENU_DATA[menuVal]) {
@@ -338,8 +308,6 @@ function renderSchedule(startDate: Date) {
         // ボタンを押した時、メニューが選択されてない場合のエラー表示
         btn.onclick = () => {
           if (!getSelectedMenuValue()) {
-            showStatus('メニューを選択してから時間を選択してください。');
-            statusMessage.scrollIntoView({ behavior: 'smooth', block: 'center' }); // スマホで気づくようにエラー位置へスクロール
             return;
           }
 
@@ -358,12 +326,10 @@ function renderSchedule(startDate: Date) {
           }
 
           if (!canBook) {
-            showStatus(`この時間からではメニューの所要時間（${duration}時間）を確保できないため、予約できません。`);
-            statusMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
           }
 
-          statusMessage.style.display = 'none'; // 入力済みならエラーを消す
+          
           document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
 
           // 所要時間分だけボタンを青く（選択状態に）する
@@ -441,7 +407,6 @@ footerNextBtn.addEventListener('click', () => {
     //** --メニューを選択しなかったら返す-- */
     const menuVal = getSelectedMenuValue();
     if (!menuVal || !MENU_DATA[menuVal]) {
-      showStatus('メニューを選択してください。');
       return;
     }
     
@@ -450,7 +415,7 @@ footerNextBtn.addEventListener('click', () => {
     step2MenuPrice.textContent = menuInfo.price.toLocaleString();
     step2MenuDuration.textContent = menuInfo.duration.toString();
 
-    statusMessage.style.display = 'none';
+    
     step1Menu.classList.remove('active');
     step2Date.classList.add('active');
     
@@ -468,11 +433,9 @@ footerNextBtn.addEventListener('click', () => {
   } else if (currentStep === 2) {
     const datetimeVal = (document.getElementById('selected-datetime') as HTMLInputElement).value;
     if (!datetimeVal) {
-      showStatus('予約時間を選択してください。');
-      statusMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    statusMessage.style.display = 'none';
+    
     step2Date.classList.remove('active');
     step3Confirm.classList.add('active');
     
@@ -501,7 +464,7 @@ footerBackBtn.addEventListener('click', () => {
     footerNextBtn.textContent = '日時選択へ';
     footerBackBtn.style.visibility = 'hidden'; // Step1では戻るボタンを非表示
     currentStep = 1;
-    statusMessage.style.display = 'none';
+    
     updateStickyHeaderOffset();
     updateNextBtnState();
   } else if (currentStep === 3) {
@@ -514,7 +477,7 @@ footerBackBtn.addEventListener('click', () => {
     footerNextBtn.textContent = '内容確認へ';
     // 戻るボタンは表示のまま
     currentStep = 2;
-    statusMessage.style.display = 'none';
+    
     updateStickyHeaderOffset();
     updateNextBtnState();
   }
@@ -593,12 +556,10 @@ form.addEventListener('submit', async (e) => {
   const datetime: string = (document.getElementById('selected-datetime') as HTMLInputElement).value;
 
   if (!instagramId.trim() && !phoneNumber.trim()) {
-    showStatus('Instagram ID、または電話番号のどちらかを入力してください。');
     return;
   }
 
   if (!datetime) {
-    showStatus('予約時間を選択してください。');
     return;
   }
 
@@ -632,12 +593,12 @@ form.addEventListener('submit', async (e) => {
     step3Confirm.classList.remove('active');
     step1Menu.classList.add('active');
     
-    statusMessage.style.display = 'none';
+    
     updateSummary();
     currentStartDate = new Date(); // 予約完了後は今日の日付に戻す
     loadAndRenderSchedule(); // サーバーから最新の予約状況を再取得
   } catch {
-    showStatus('送信に失敗しました。サーバーが起動しているか確認してください。');
+    // 送信失敗時の処理
   }
 });
 
