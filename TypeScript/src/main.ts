@@ -1,32 +1,11 @@
 import * as inputs from "./form.ts"
 
-// 型定義
-interface Reservation {
-  start: Date;
-  end: Date;
-}
-
+// ==========================================
+// 1. HTML DOM取得
+// ==========================================
 // 宣言である
 const formContainer = document.getElementById('form-container') as HTMLDivElement;
 const form = document.getElementById('reservation-form') as HTMLFormElement;
-
-interface MenuInfo {
-  name: string;
-  price: number;
-  duration: number; // in hours
-}
-
-const MENU_DATA: Record<string, MenuInfo> = {
-  'cut_full': { name: 'フルコース', price: 6000, duration: 1 },
-  'cut': { name: 'カット', price: 4000, duration: 1 },
-  'perm_nurepan': { name: '濡れパン', price: 9000, duration: 3 },
-  'perm_punch': { name: 'パンチパーマ', price: 9000, duration: 3 },
-  'perm_niguro': { name: 'ニグロ', price: 9000, duration: 3 },
-  'perm_gokudo': { name: '極道パーマ', price: 9000, duration: 3 },
-  'color': { name: 'カラー', price: 8000, duration: 2 },
-};
-
-let currentStep = 1;
 
 const step1Menu = document.getElementById('step-1-menu') as HTMLDivElement;
 const step2Date = document.getElementById('step-2-date') as HTMLDivElement;
@@ -46,97 +25,6 @@ const footerNextBtn = document.getElementById('footer-next-btn') as HTMLButtonEl
 
 const menuRadios = document.querySelectorAll('input[name="menu"]') as NodeListOf<HTMLInputElement>;
 
-/** --選択したメニューの値を取得する関数-- */
-const getSelectedMenuValue = (): string | null => {
-  const selectedRadio = document.querySelector('input[name="menu"]:checked') as HTMLInputElement | null;
-  return selectedRadio ? selectedRadio.value : null;
-};
-
-// ステップ遷移ロジック
-footerNextBtn.addEventListener('click', () => {
-  if (currentStep === 1) {
-    //** --メニューを選択しなかったら返す-- */
-    const menuVal = getSelectedMenuValue();
-    if (!menuVal || !MENU_DATA[menuVal]) {
-      showStatus('メニューを選択してください。');
-      return;
-    }
-    
-    const menuInfo = MENU_DATA[menuVal];
-    step2MenuName.textContent = menuInfo.name;
-    step2MenuPrice.textContent = menuInfo.price.toLocaleString();
-    step2MenuDuration.textContent = menuInfo.duration.toString();
-
-    statusMessage.style.display = 'none';
-    step1Menu.classList.remove('active');
-    step2Date.classList.add('active');
-    
-    indicatorStep1.classList.remove('active');
-    indicatorStep2.classList.add('active');
-    
-    footerNextBtn.textContent = '内容確認へ';
-    footerBackBtn.style.visibility = 'visible'; // 戻るボタンを表示
-    currentStep = 2;
-    renderSchedule(currentStartDate);
-    updateNextBtnState();
-    
-    // Step2が表示された直後にオフセットを再計算
-    requestAnimationFrame(() => updateStickyHeaderOffset());
-  } else if (currentStep === 2) {
-    const datetimeVal = (document.getElementById('selected-datetime') as HTMLInputElement).value;
-    if (!datetimeVal) {
-      showStatus('予約時間を選択してください。');
-      statusMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    statusMessage.style.display = 'none';
-    step2Date.classList.remove('active');
-    step3Confirm.classList.add('active');
-    
-    indicatorStep2.classList.remove('active');
-    indicatorStep3.classList.add('active');
-    
-    footerNextBtn.textContent = '予約を確定する';
-    currentStep = 3;
-    updateSummary();
-    updateNextBtnState();
-  } else if (currentStep === 3) {
-    const submitBtn = document.getElementById('submit-button') as HTMLButtonElement;
-    submitBtn.click();
-  }
-});
-
-// フッターの戻るボタン（←）の制御
-footerBackBtn.addEventListener('click', () => {
-  if (currentStep === 2) {
-    step2Date.classList.remove('active');
-    step1Menu.classList.add('active');
-    
-    indicatorStep2.classList.remove('active');
-    indicatorStep1.classList.add('active');
-    
-    footerNextBtn.textContent = '日時選択へ';
-    footerBackBtn.style.visibility = 'hidden'; // Step1では戻るボタンを非表示
-    currentStep = 1;
-    statusMessage.style.display = 'none';
-    updateStickyHeaderOffset();
-    updateNextBtnState();
-  } else if (currentStep === 3) {
-    step3Confirm.classList.remove('active');
-    step2Date.classList.add('active');
-    
-    indicatorStep3.classList.remove('active');
-    indicatorStep2.classList.add('active');
-    
-    footerNextBtn.textContent = '内容確認へ';
-    // 戻るボタンは表示のまま
-    currentStep = 2;
-    statusMessage.style.display = 'none';
-    updateStickyHeaderOffset();
-    updateNextBtnState();
-  }
-});
-
 const prevBtns = document.querySelectorAll('.prev-schedule-btn') as NodeListOf<HTMLButtonElement>;
 const dateJumpInput = document.getElementById('date-jump') as HTMLInputElement;
 const nextBtns = document.querySelectorAll('.next-schedule-btn') as NodeListOf<HTMLButtonElement>;
@@ -144,7 +32,6 @@ const nextBtns = document.querySelectorAll('.next-schedule-btn') as NodeListOf<H
 const headerRow = document.getElementById('schedule-header') as HTMLTableRowElement;
 const bodyElement = document.getElementById('schedule-body') as HTMLTableSectionElement;
 
-const selectionSummary = document.getElementById('selection-summary') as HTMLDivElement;
 const summaryMenu = document.getElementById('summary-menu') as HTMLSpanElement;
 const summaryDatetime = document.getElementById('summary-datetime') as HTMLSpanElement;
 
@@ -156,48 +43,64 @@ const backToHomeBtn = document.getElementById('back-to-home-btn') as HTMLButtonE
 
 const toastMessage = document.getElementById('toast-message') as HTMLDivElement;
 
+// ==========================================
+// 2. 型定義
+// ==========================================
+interface Reservation {
+  start: Date;
+  end: Date;
+}
+
+interface MenuInfo {
+  name: string;
+  price: number;
+  duration: number; // in hours
+}
+
+// ==========================================
+// 3. 定数
+// ==========================================
+const MENU_DATA: Record<string, MenuInfo> = {
+  'cut_full': { name: 'フルコース', price: 6000, duration: 1 },
+  'cut': { name: 'カット', price: 4000, duration: 1 },
+  'perm_nurepan': { name: '濡れパン', price: 9000, duration: 3 },
+  'perm_punch': { name: 'パンチパーマ', price: 9000, duration: 3 },
+  'perm_niguro': { name: 'ニグロ', price: 9000, duration: 3 },
+  'perm_gokudo': { name: '極道パーマ', price: 9000, duration: 3 },
+  'color': { name: 'カラー', price: 8000, duration: 2 },
+};
+
 /** 確定済みの予約データをすべて取得するurlである */
 const ReservationUrl: string = 'http://localhost:8000/reservations';
+
+/** 予約可能最大日である */
+const maxDate: Date = new Date();
+maxDate.setMonth(maxDate.getMonth() + 2); // 2ヶ月先まで予約可能と設定
+
+// ==========================================
+// 4. 変数
+// ==========================================
+let currentStep = 1;
 
 // --- スケジュール表示の管理変数である ---
 /** カレンダーに表示する最初の日である */
 let currentStartDate: Date = new Date();
 /** セルの表示日数である */
 let daysToShow: number = (window.innerWidth <= 600) ? 5 : 7; // スマホは5日、PCは7日
-/** 予約可能最大日である */
-const maxDate: Date = new Date();
-maxDate.setMonth(maxDate.getMonth() + 2); // 2ヶ月先まで予約可能と設定
-
-// 画面リサイズ時に表示日数を更新する
-window.addEventListener('resize', () => {
-  const newDaysToShow: number = window.innerWidth <= 600 ? 5 : 7;
-  if (newDaysToShow !== daysToShow) {
-    daysToShow = newDaysToShow;
-    renderSchedule(currentStartDate);
-  }
-});
-
-// 日付ジャンプの初期設定 @TODO
-if (dateJumpInput) {
-  // --- 1. カレンダーの選択可能範囲の設定 ---
-  const today: Date = new Date();
-  const todayStr: string = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  dateJumpInput.min = todayStr;
-  const maxStr: string = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`;
-  dateJumpInput.max = maxStr;
-
-  // --- 2. イベントリスナーの登録 ---
-  dateJumpInput.addEventListener('change', (event: Event) => {
-    const target = event.target as HTMLInputElement;
-    if (target.value) {
-      currentStartDate = new Date(target.value);
-      loadAndRenderSchedule();
-    }
-  });
-};
 
 /** 決定した予約の開始時間と終了時間を格納している配列である */
 let bookedReservations: Reservation[] = [];
+
+let toastTimeout: ReturnType<typeof setTimeout>;
+
+// ==========================================
+// 5. 関数
+// ==========================================
+/** --選択したメニューの値を取得する関数-- */
+const getSelectedMenuValue = (): string | null => {
+  const selectedRadio = document.querySelector('input[name="menu"]:checked') as HTMLInputElement | null;
+  return selectedRadio ? selectedRadio.value : null;
+};
 
 /** ---サーバーから予約情報を取得しカレンダーを描画する---
  * 1. 予約情報の開始時刻と終了時刻を配列に格納する
@@ -218,8 +121,6 @@ async function loadAndRenderSchedule() {
   }
   renderSchedule(currentStartDate);
 }
-
-let toastTimeout: ReturnType<typeof setTimeout>;
 
 /** --エラーメッセージを表示する関数である--
  * 第一引数はテキストの挿入
@@ -297,45 +198,6 @@ const updateSummary = () => {
     summaryDatetime.textContent = '未選択';
   }
 };
-
-// メニュー変更時にサマリーとスケジュールを更新
-menuRadios.forEach(radio => {
-  radio.addEventListener('change', () => {
-    (document.getElementById('selected-datetime') as HTMLInputElement).value = ''; // 必要な枠数が変わるため選択日時をリセット
-    updateSummary();
-    renderSchedule(currentStartDate);
-    updateNextBtnState();
-  });
-});
-
-[inputs.name, inputs.instagram, inputs.phone].forEach(input => {
-  input.addEventListener('input', updateNextBtnState);
-});
-
-
-// 初期表示としてスケジュールを生成
-loadAndRenderSchedule();
-
-// 矢印ボタンのイベントリスナー（復活）
-nextBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    currentStartDate.setDate(currentStartDate.getDate() + daysToShow);
-    renderSchedule(currentStartDate);
-  });
-});
-
-prevBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    currentStartDate.setDate(currentStartDate.getDate() - daysToShow);
-    const today: Date = new Date();
-    today.setHours(0, 0, 0, 0);
-    // 今日より過去には戻れないように制限
-    if (currentStartDate < today) {
-      currentStartDate = new Date(today);
-    }
-    renderSchedule(currentStartDate);
-  });
-});
 
 /**スケジュールを描写する関数である
  * 第一引数にはスケジュール開始日を渡すのである
@@ -529,6 +391,199 @@ function renderSchedule(startDate: Date) {
   requestAnimationFrame(() => updateStickyHeaderOffset());
 }
 
+// スクロール追従時のオフセット計算処理
+function updateStickyHeaderOffset() {
+  const stepIndicator = document.querySelector('.step-indicator') as HTMLElement;
+  const menuInfo = document.querySelector('#selected-menu-info') as HTMLElement;
+  const monthRow = document.getElementById('schedule-header-month') as HTMLTableRowElement;
+  
+  let indicatorHeight = 0;
+  if (stepIndicator) {
+    indicatorHeight = stepIndicator.getBoundingClientRect().height;
+  }
+  
+  // メニュー表示エリアの追従位置をステップインジケーターの高さにぴったり合わせる
+  document.documentElement.style.setProperty('--sticky-menu-top', `${indicatorHeight}px`);
+  
+  // 上段ヘッダー（年月）の高さを取得（未描画時はデフォルト28px）
+  let monthRowHeight = 28;
+  if (monthRow) {
+    const rectHeight = monthRow.getBoundingClientRect().height;
+    if (rectHeight > 0) {
+      monthRowHeight = rectHeight;
+    }
+  }
+
+  const isMobile = window.innerWidth <= 600;
+  if (!isMobile) {
+    // デスクトップでは表自体が独立してスクロールするため、ヘッダー位置は0
+    document.documentElement.style.setProperty('--sticky-table-header-month-top', '0px');
+    document.documentElement.style.setProperty('--sticky-table-header-date-top', `${monthRowHeight}px`);
+    return;
+  }
+  
+  let offset = indicatorHeight;
+  // Step2が表示されている場合のみメニュー表示エリアの高さを含める
+  if (menuInfo && menuInfo.offsetParent !== null) {
+    offset += menuInfo.getBoundingClientRect().height;
+  }
+  
+  document.documentElement.style.setProperty('--sticky-table-header-month-top', `${offset}px`);
+  document.documentElement.style.setProperty('--sticky-table-header-date-top', `${offset + monthRowHeight}px`);
+}
+
+// ==========================================
+// 6. イベントリスナー
+// ==========================================
+// ステップ遷移ロジック
+footerNextBtn.addEventListener('click', () => {
+  if (currentStep === 1) {
+    //** --メニューを選択しなかったら返す-- */
+    const menuVal = getSelectedMenuValue();
+    if (!menuVal || !MENU_DATA[menuVal]) {
+      showStatus('メニューを選択してください。');
+      return;
+    }
+    
+    const menuInfo = MENU_DATA[menuVal];
+    step2MenuName.textContent = menuInfo.name;
+    step2MenuPrice.textContent = menuInfo.price.toLocaleString();
+    step2MenuDuration.textContent = menuInfo.duration.toString();
+
+    statusMessage.style.display = 'none';
+    step1Menu.classList.remove('active');
+    step2Date.classList.add('active');
+    
+    indicatorStep1.classList.remove('active');
+    indicatorStep2.classList.add('active');
+    
+    footerNextBtn.textContent = '内容確認へ';
+    footerBackBtn.style.visibility = 'visible'; // 戻るボタンを表示
+    currentStep = 2;
+    renderSchedule(currentStartDate);
+    updateNextBtnState();
+    
+    // Step2が表示された直後にオフセットを再計算
+    requestAnimationFrame(() => updateStickyHeaderOffset());
+  } else if (currentStep === 2) {
+    const datetimeVal = (document.getElementById('selected-datetime') as HTMLInputElement).value;
+    if (!datetimeVal) {
+      showStatus('予約時間を選択してください。');
+      statusMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    statusMessage.style.display = 'none';
+    step2Date.classList.remove('active');
+    step3Confirm.classList.add('active');
+    
+    indicatorStep2.classList.remove('active');
+    indicatorStep3.classList.add('active');
+    
+    footerNextBtn.textContent = '予約を確定する';
+    currentStep = 3;
+    updateSummary();
+    updateNextBtnState();
+  } else if (currentStep === 3) {
+    const submitBtn = document.getElementById('submit-button') as HTMLButtonElement;
+    submitBtn.click();
+  }
+});
+
+// フッターの戻るボタン（←）の制御
+footerBackBtn.addEventListener('click', () => {
+  if (currentStep === 2) {
+    step2Date.classList.remove('active');
+    step1Menu.classList.add('active');
+    
+    indicatorStep2.classList.remove('active');
+    indicatorStep1.classList.add('active');
+    
+    footerNextBtn.textContent = '日時選択へ';
+    footerBackBtn.style.visibility = 'hidden'; // Step1では戻るボタンを非表示
+    currentStep = 1;
+    statusMessage.style.display = 'none';
+    updateStickyHeaderOffset();
+    updateNextBtnState();
+  } else if (currentStep === 3) {
+    step3Confirm.classList.remove('active');
+    step2Date.classList.add('active');
+    
+    indicatorStep3.classList.remove('active');
+    indicatorStep2.classList.add('active');
+
+    footerNextBtn.textContent = '内容確認へ';
+    // 戻るボタンは表示のまま
+    currentStep = 2;
+    statusMessage.style.display = 'none';
+    updateStickyHeaderOffset();
+    updateNextBtnState();
+  }
+});
+
+// 画面リサイズ時に表示日数を更新する
+window.addEventListener('resize', () => {
+  const newDaysToShow: number = window.innerWidth <= 600 ? 5 : 7;
+  if (newDaysToShow !== daysToShow) {
+    daysToShow = newDaysToShow;
+    renderSchedule(currentStartDate);
+  }
+});
+window.addEventListener('resize', updateStickyHeaderOffset);
+
+// 日付ジャンプの初期設定
+if (dateJumpInput) {
+  // --- 1. カレンダーの選択可能範囲の設定 ---
+  const today: Date = new Date();
+  const todayStr: string = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  dateJumpInput.min = todayStr;
+  const maxStr: string = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`;
+  dateJumpInput.max = maxStr;
+
+  // --- 2. イベントリスナーの登録 ---
+  dateJumpInput.addEventListener('change', (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    if (target.value) {
+      currentStartDate = new Date(target.value);
+      loadAndRenderSchedule();
+    }
+  });
+}
+
+// メニュー変更時にサマリーとスケジュールを更新
+menuRadios.forEach(radio => {
+  radio.addEventListener('change', () => {
+    (document.getElementById('selected-datetime') as HTMLInputElement).value = ''; // 必要な枠数が変わるため選択日時をリセット
+    updateSummary();
+    renderSchedule(currentStartDate);
+    updateNextBtnState();
+  });
+});
+
+[inputs.name, inputs.instagram, inputs.phone].forEach(input => {
+  input.addEventListener('input', updateNextBtnState);
+});
+
+// 矢印ボタンのイベントリスナー
+nextBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentStartDate.setDate(currentStartDate.getDate() + daysToShow);
+    renderSchedule(currentStartDate);
+  });
+});
+
+prevBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentStartDate.setDate(currentStartDate.getDate() - daysToShow);
+    const today: Date = new Date();
+    today.setHours(0, 0, 0, 0);
+    // 今日より過去には戻れないように制限
+    if (currentStartDate < today) {
+      currentStartDate = new Date(today);
+    }
+    renderSchedule(currentStartDate);
+  });
+});
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const customerName: string = inputs.name.value;
@@ -607,49 +662,10 @@ backToHomeBtn.addEventListener('click', () => {
   updateNextBtnState();
 });
 
-// スクロール追従時のオフセット計算処理
-function updateStickyHeaderOffset() {
-  const stepIndicator = document.querySelector('.step-indicator') as HTMLElement;
-  const menuInfo = document.querySelector('#selected-menu-info') as HTMLElement;
-  const monthRow = document.getElementById('schedule-header-month') as HTMLTableRowElement;
-  
-  let indicatorHeight = 0;
-  if (stepIndicator) {
-    indicatorHeight = stepIndicator.getBoundingClientRect().height;
-  }
-  
-  // メニュー表示エリアの追従位置をステップインジケーターの高さにぴったり合わせる
-  document.documentElement.style.setProperty('--sticky-menu-top', `${indicatorHeight}px`);
-  
-  // 上段ヘッダー（年月）の高さを取得（未描画時はデフォルト28px）
-  let monthRowHeight = 28;
-  if (monthRow) {
-    const rectHeight = monthRow.getBoundingClientRect().height;
-    if (rectHeight > 0) {
-      monthRowHeight = rectHeight;
-    }
-  }
-
-  const isMobile = window.innerWidth <= 600;
-  if (!isMobile) {
-    // デスクトップでは表自体が独立してスクロールするため、ヘッダー位置は0
-    document.documentElement.style.setProperty('--sticky-table-header-month-top', '0px');
-    document.documentElement.style.setProperty('--sticky-table-header-date-top', `${monthRowHeight}px`);
-    return;
-  }
-  
-  let offset = indicatorHeight;
-  // Step2が表示されている場合のみメニュー表示エリアの高さを含める
-  if (menuInfo && menuInfo.offsetParent !== null) {
-    offset += menuInfo.getBoundingClientRect().height;
-  }
-  
-  document.documentElement.style.setProperty('--sticky-table-header-month-top', `${offset}px`);
-  document.documentElement.style.setProperty('--sticky-table-header-date-top', `${offset + monthRowHeight}px`);
-}
-
-window.addEventListener('resize', updateStickyHeaderOffset);
 document.addEventListener('DOMContentLoaded', () => {
   updateStickyHeaderOffset();
   updateNextBtnState(); // 初期ロード時の状態をセット
 });
+
+// 初期表示としてスケジュールを生成
+loadAndRenderSchedule();
