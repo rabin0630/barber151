@@ -364,6 +364,7 @@ function updateStickyHeaderOffset() {
   const monthRow = document.getElementById('schedule-header-month') as HTMLTableRowElement;
   
   let indicatorHeight = 0;
+
   if (stepIndicator) {
     indicatorHeight = stepIndicator.getBoundingClientRect().height;
   }
@@ -401,10 +402,10 @@ function updateStickyHeaderOffset() {
 // ==========================================
 // 6. イベントリスナー
 // ==========================================
+
 // ステップ遷移ロジック
 footerNextBtn.addEventListener('click', () => {
   if (currentStep === 1) {
-    //** --メニューを選択しなかったら返す-- */
     const menuVal = getSelectedMenuValue();
     if (!menuVal || !MENU_DATA[menuVal]) {
       return;
@@ -490,8 +491,9 @@ window.addEventListener('resize', () => {
     daysToShow = newDaysToShow;
     renderSchedule(currentStartDate);
   }
+
+  updateStickyHeaderOffset();
 });
-window.addEventListener('resize', updateStickyHeaderOffset);
 
 // 日付ジャンプの初期設定
 if (dateJumpInput) {
