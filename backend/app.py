@@ -47,15 +47,17 @@ def init_db():
         )
     ''')
     
-    # 初回起動時のみ、初期メニューを自動で登録する
-    cursor.execute('SELECT count(*) FROM menus')
-    if cursor.fetchone()[0] == 0:
-        menus = [
-            ('cut', 'カット', 5000, 1),
-            ('color', 'カラー', 8000, 2),
-            ('perm', 'パーマ', 10000, 3)
-        ]
-        cursor.executemany('INSERT INTO menus (id, name, price, duration) VALUES (?, ?, ?, ?)', menus)
+    # メニュー情報を最新の状態に保つため、起動時に上書き（または追加）する
+    menus = [
+        ('cut_full', 'フルコース', 6000, 1),
+        ('cut', 'カット', 4000, 1),
+        ('perm_nurepan', '濡れパン', 9000, 3),
+        ('perm_punch', 'パンチパーマ', 9000, 3),
+        ('perm_niguro', 'ニグロ', 9000, 3),
+        ('perm_gokudo', '極道パーマ', 9000, 3),
+        ('color', 'カラー', 8000, 2),
+    ]
+    cursor.executemany('INSERT OR REPLACE INTO menus (id, name, price, duration) VALUES (?, ?, ?, ?)', menus)
         
     conn.commit()
     conn.close()

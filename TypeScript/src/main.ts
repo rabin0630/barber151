@@ -577,7 +577,11 @@ form.addEventListener('submit', async (e) => {
         reservation_date: datetime
       })
     });
-    if (!response.ok) throw new Error();
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || '予約に失敗しました。');
+    }
 
     // 予約完了画面への切り替え
     const selectedDatetimeStr: string | null = summaryDatetime.textContent; // 例: "4/30(火) 10:00 〜 11:00"
@@ -599,8 +603,9 @@ form.addEventListener('submit', async (e) => {
     updateSummary();
     currentStartDate = new Date(); // 予約完了後は今日の日付に戻す
     loadAndRenderSchedule(); // サーバーから最新の予約状況を再取得
-  } catch {
+  } catch (e: any) {
     // 送信失敗時の処理
+    alert(e.message || 'サーバーエラーが発生しました。再度お試しください。');
   }
 });
 

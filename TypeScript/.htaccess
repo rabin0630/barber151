@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. 静的ファイル（HTML/CSS/JS/画像など）が実際に存在する場合は、それをそのまま配信する
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 2. /api/ で始まるリクエストは、裏で動いているAPIサーバー（FastAPIなど）に転送する
+  RewriteRule ^api/(.*)$ http://127.0.0.1:8000/api/$1 [P,L]
+</IfModule>
+
+# 3. ブラウザにJavaScriptファイルであることを正しく伝える設定（MIMEタイプ対策）
+AddType application/javascript .js
+AddType application/wasm .wasm
