@@ -29,23 +29,24 @@
   <main class="main-body">
     <div class="reservation-container" style="max-width: 900px;">
       <h2>予約一覧（管理者用）</h2>
-      
-      <div id="control-wrapper" class="control-wrapper">
-        <div class="schedule-nav">
-          <button type="button" class="nav-btn prev-schedule-btn">←</button>
-          <input type="date" id="date-jump" class="date-jump-input">
-          <button type="button" class="nav-btn next-schedule-btn">→</button>
+      <div class="reservation-wrapper">
+        <div id="control-wrapper" class="control-wrapper">
+          <div class="schedule-nav">
+            <button type="button" class="nav-btn prev-schedule-btn">←</button>
+            <input type="date" id="date-jump" class="date-jump-input">
+            <button type="button" class="nav-btn next-schedule-btn">→</button>
+          </div>
         </div>
-      </div>
-      <div id="schedule-wrapper" class="schedule-wrapper">
-        <table id="schedule-table">
-          <thead>
-            <tr id="schedule-header-month"></tr>
-            <tr id="schedule-header">
-            </tr>
-          </thead>
-          <tbody id="schedule-body"></tbody>
-        </table>
+        <div id="schedule-wrapper" class="schedule-wrapper">
+          <table id="schedule-table">
+            <thead>
+              <tr id="schedule-header-month"></tr>
+              <tr id="schedule-header">
+              </tr>
+            </thead>
+            <tbody id="schedule-body"></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- 履歴表示エリア -->
