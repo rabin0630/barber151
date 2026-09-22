@@ -1,5 +1,6 @@
 const menuPageEL = document.getElementById("step-1-menu");
 
+// メニューの型定義
 interface MenuInfo {
   id: string;
   type: string;
@@ -14,8 +15,10 @@ interface Menucategory {
   icon: string;
 }
 
+// カテゴリのアイコン
 const icons = ["/src/images/barbershop.png", "/src/images/barber-chair.png", "/src/images/hairdresser.png"];
 
+// メニュー
 const menus: MenuInfo[] = [
   { id: "cut_full", name: "フルコース", price: 6000, duration: 1, type: "cut" },
   { id: "cut", name: "カット", price: 4000, duration: 1, type: "cut" },
@@ -26,12 +29,14 @@ const menus: MenuInfo[] = [
   { id: "color", name: "カラー", price: 8000, duration: 2, type: "color" },
 ];
 
+// メニューのカテゴリ
 const menuCategories: Menucategory[] = [
   { id: "cut", name: "カット", icon: icons[0] },
   { id: "perm", name: "パーマ", icon: icons[1] },
   { id: "color", name: "カラー", icon: icons[2] },
 ];
 
+// メニューのカテゴリを作成する関数
 menuCategories.forEach((category) => {
   let menuCategoryEl = document.createElement("div");
   menuCategoryEl.className = "menu-category";
@@ -52,6 +57,7 @@ menuCategories.forEach((category) => {
   menuPageEL.appendChild(menuCategoryEl);
 });
 
+// メニューのカードを作成する関数
 menus.forEach((menu) => {
   let targetContainer: HTMLElement | null = null;
 
