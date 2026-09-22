@@ -3,3 +3,4 @@ requirements.txt
 .venv/
 __pycache__/
 .DS_Store
+*.db
