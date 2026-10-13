@@ -9,6 +9,18 @@ from src.models import Reservation
 CONFIRMED = "confirmed"
 
 
+def count_reservations(db: Session) -> int:
+    """予約の件数を数える
+
+    Args:
+        db (Session): DBのセッション
+
+    Returns:
+        int: 予約の件数
+    """
+    return db.query(func.count(Reservation.id)).scalar()
+
+
 def get_confirmed_reservations(db: Session) -> list[Reservation]:
     """確定済みの予約をすべて返す。メニューも一緒に読み込む
 

@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
-from src.dependencies import get_db
+from src.dependencies import get_db, require_admin
 from src.schemas.menus import MenuItem, MenuRequest, MenusResponse
 from src.services import menu_service
 
@@ -23,7 +23,7 @@ def get_menus(db: Session = Depends(get_db)) -> MenusResponse:
     return MenusResponse(menus=[MenuItem.model_validate(m) for m in menus])
 
 
-@router.post("/menus", response_model=MenuItem)
+@router.post("/menus", response_model=MenuItem, dependencies=[Depends(require_admin)])
 def create_menu(request: MenuRequest, db: Session = Depends(get_db)) -> MenuItem:
     """POST /menus: メニューを追加する
 
@@ -38,7 +38,7 @@ def create_menu(request: MenuRequest, db: Session = Depends(get_db)) -> MenuItem
     return MenuItem.model_validate(menu)
 
 
-@router.put("/menus/{menu_id}", response_model=MenuItem)
+@router.put("/menus/{menu_id}", response_model=MenuItem, dependencies=[Depends(require_admin)])
 def update_menu(menu_id: int, request: MenuRequest, db: Session = Depends(get_db)) -> MenuItem:
     """PUT /menus/{menu_id}: メニューを書き換える
 
@@ -59,7 +59,7 @@ def update_menu(menu_id: int, request: MenuRequest, db: Session = Depends(get_db
     return MenuItem.model_validate(menu)
 
 
-@router.delete("/menus/{menu_id}", status_code=204)
+@router.delete("/menus/{menu_id}", status_code=204, dependencies=[Depends(require_admin)])
 def delete_menu(menu_id: int, db: Session = Depends(get_db)) -> Response:
     """DELETE /menus/{menu_id}: メニューを削除する(論理削除)
 

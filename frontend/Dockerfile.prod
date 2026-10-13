@@ -1,0 +1,23 @@
+# 本番用。ビルドした静的ファイルをnginxで配信する
+
+# --- ビルド ---
+FROM node:22-alpine AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+# APIのURLはビルド時に埋め込まれる。nginxが/api/をバックエンドに転送する
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+RUN npm run build
+
+# --- 配信 ---
+FROM nginx:1.27-alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80 443

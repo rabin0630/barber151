@@ -11,12 +11,14 @@ from src import models  # noqa: F401  create_allの前にテーブル定義を�
 from src.database import Base, SessionLocal, engine
 from src.exceptions import AppError
 from src.routers import menus_routers, reservations_routers
-from src.services import menu_service
+from src.services import menu_service, reservation_service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """APIの起動時に、テーブルがなければ作り、メニューがなければ初期データを入れる
+
+    DEMO_DATAがtrueなら、予約がない時にダミーの予約も入れる。
 
     Args:
         app (FastAPI): FastAPIのアプリ
@@ -27,6 +29,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         menu_service.seed_menus(db)
+        if config.DEMO_DATA:
+            reservation_service.seed_demo_reservations(db)
     yield
 
 

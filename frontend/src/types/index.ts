@@ -43,7 +43,18 @@ export interface AdminReservation extends Reservation {
 // API の型定義（日時はUTCのISO8601文字列）
 // ==========================================
 
-/** GET /reservations の予約1件 */
+/** GET /reservations の予約1件（時間帯だけ） */
+export interface ReservationSlot {
+  start_datetime: string;
+  end_datetime: string;
+}
+
+/** GET /reservations のレスポンス */
+export interface ReservationSlotsResponse {
+  reservations: ReservationSlot[];
+}
+
+/** GET /admin/reservations の予約1件 */
 export interface ReservationItem {
   start_datetime: string;
   end_datetime: string;
@@ -51,7 +62,7 @@ export interface ReservationItem {
   customer_name: string;
 }
 
-/** GET /reservations のレスポンス */
+/** GET /admin/reservations のレスポンス */
 export interface ReservationsResponse {
   reservations: ReservationItem[];
 }

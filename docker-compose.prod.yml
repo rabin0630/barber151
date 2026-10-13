@@ -1,0 +1,45 @@
+# 本番用。EC2には、このファイルとnginx/と.envだけを置く
+# 使い方はDEPLOY.mdを参照
+services:
+  backend:
+    image: ghcr.io/rabin0630/barber151-backend:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: sqlite:////data/barber151.db
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?.envにADMIN_TOKENを設定してください}
+      DEMO_DATA: ${DEMO_DATA:-false}
+      CORS_ORIGINS: https://${DOMAIN}
+    volumes:
+      # コンテナを作り直してもDBが消えないようにする
+      - db-data:/data
+
+  frontend:
+    image: ghcr.io/rabin0630/barber151-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?.envにDOMAINを設定してください}
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - certbot-www:/var/www/certbot:ro
+      - letsencrypt:/etc/letsencrypt:ro
+    # 更新された証明書を読み込むため、6時間ごとにnginxをリロードする
+    command: /bin/sh -c 'while :; do sleep 6h; nginx -s reload; done & exec /docker-entrypoint.sh nginx -g "daemon off;"'
+    depends_on:
+      - backend
+
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - certbot-www:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    # 12時間ごとに、期限が近い証明書を更新する
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'
+
+volumes:
+  db-data:
+  certbot-www:
+  letsencrypt:

@@ -1,8 +1,12 @@
-"""/reservations、/historyの結合テスト"""
+"""/reservations、/admin/reservations、/historyの結合テスト"""
+from datetime import timezone
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from src import config
 from src.models import Reservation
+from src.services import reservation_service
 from src.services.menu_service import DEFAULT_MENUS
 
 
@@ -66,11 +70,11 @@ def test_invalid_menu(client: TestClient, db: Session):
     assert db.query(Reservation).count() == 0
 
 
-def test_deleted_menu(client: TestClient, db: Session):
+def test_deleted_menu(admin_client: TestClient, db: Session):
     # 削除したメニューでは登録できない
-    client.delete(f"/menus/{menu_id_of('カット')}")
+    admin_client.delete(f"/menus/{menu_id_of('カット')}")
 
-    response = reserve(client, "2026-10-12T01:00:00.000Z", menu_name="カット")
+    response = reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="カット")
 
     assert response.status_code == 400
     assert response.json() == {"detail": "無効なメニューです。"}
@@ -99,11 +103,25 @@ def test_overlap_with_other_timezone(client: TestClient):
     assert response.status_code == 400
 
 
-def test_get_reservations(client: TestClient):
-    # 確定済みの予約を、UTCの日時(末尾Z)とメニュー名つきで返す
+def test_get_reservation_slots(client: TestClient):
+    # 確定済みの予約の時間帯を、UTCの日時(末尾Z)で返す。お客様の情報は返さない
     reserve(client, "2026-10-12T01:00:00.000Z", menu_name="フルコース")
 
     response = client.get("/reservations")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "reservations": [
+            {"start_datetime": "2026-10-12T01:00:00Z", "end_datetime": "2026-10-12T02:00:00Z"}
+        ]
+    }
+
+
+def test_get_admin_reservations(admin_client: TestClient):
+    # 管理用は、メニュー名とお客様の名前もつけて返す
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="フルコース")
+
+    response = admin_client.get("/admin/reservations")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -118,12 +136,12 @@ def test_get_reservations(client: TestClient):
     }
 
 
-def test_get_history(client: TestClient):
+def test_get_history(admin_client: TestClient):
     # 新しく作られた順に、最大10件返す
     for hour in range(11):
-        reserve(client, f"2026-10-12T{hour:02d}:00:00.000Z")
+        reserve(admin_client, f"2026-10-12T{hour:02d}:00:00.000Z")
 
-    response = client.get("/history")
+    response = admin_client.get("/history")
 
     assert response.status_code == 200
     history = response.json()["history"]
@@ -131,3 +149,39 @@ def test_get_history(client: TestClient):
     assert history[0]["start_datetime"] == "2026-10-12T10:00:00Z"
     assert history[0]["menu_name"] == "カット"
     assert history[0]["created_at"].endswith("Z")
+
+
+def test_admin_reads_require_token(client: TestClient):
+    # トークンがないと、お客様の情報は取れない
+    reserve(client, "2026-10-12T01:00:00.000Z")
+
+    for path in ["/admin/reservations", "/history"]:
+        response = client.get(path)
+
+        assert response.status_code == 401
+        assert response.json() == {"detail": "管理用のトークンが正しくありません。"}
+
+
+def test_admin_token_not_set(admin_client: TestClient, monkeypatch):
+    # サーバーにトークンが設定されていなければ、どんなトークンでも拒否する
+    monkeypatch.setattr(config, "ADMIN_TOKEN", "")
+
+    assert admin_client.get("/history").status_code == 401
+
+
+def test_seed_demo_reservations(db: Session):
+    # 定休日(月・火)を除いた日に、重ならないダミーの予約を入れる。2回目は何もしない
+    reservation_service.seed_demo_reservations(db)
+    reservations = db.query(Reservation).order_by(Reservation.start_datetime).all()
+
+    assert len(reservations) > 0
+    for r in reservations:
+        start_jst = r.start_datetime.replace(tzinfo=timezone.utc).astimezone(reservation_service.JST)
+        end_jst = r.end_datetime.replace(tzinfo=timezone.utc).astimezone(reservation_service.JST)
+        assert start_jst.weekday() not in (0, 1)
+        assert 8 <= start_jst.hour and end_jst.hour <= 20
+    for before, after in zip(reservations, reservations[1:]):
+        assert before.end_datetime <= after.start_datetime
+
+    reservation_service.seed_demo_reservations(db)
+    assert db.query(Reservation).count() == len(reservations)

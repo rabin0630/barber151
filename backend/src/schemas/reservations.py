@@ -43,8 +43,28 @@ class CreateReservationResponse(BaseModel):
     message: str
 
 
+class ReservationSlot(UtcDatetimeModel):
+    """GET /reservationsの1件分。だれでも見られるので、お客様の情報は入れない
+
+    Attributes:
+        start_datetime (datetime): 開始日時(UTC)
+        end_datetime (datetime): 終了日時(UTC)
+    """
+    start_datetime: datetime
+    end_datetime: datetime
+
+
+class ReservationSlotsResponse(BaseModel):
+    """GET /reservationsのレスポンス
+
+    Attributes:
+        reservations (list[ReservationSlot]): 確定済みの予約の時間帯
+    """
+    reservations: list[ReservationSlot]
+
+
 class ReservationItem(UtcDatetimeModel):
-    """GET /reservationsの1件分
+    """GET /admin/reservationsの1件分
 
     Attributes:
         start_datetime (datetime): 開始日時(UTC)
@@ -59,7 +79,7 @@ class ReservationItem(UtcDatetimeModel):
 
 
 class ReservationsResponse(BaseModel):
-    """GET /reservationsのレスポンス
+    """GET /admin/reservationsのレスポンス
 
     Attributes:
         reservations (list[ReservationItem]): 確定済みの予約

@@ -1,7 +1,7 @@
 import * as inputs from "./form.ts"
 import { loadMenus } from "./modules/menu.ts"
 import { createReservation, fetchReservations } from "./services/apiClient.ts"
-import type { MenuInfo, Reservation, ReservationItem, SlotStatus, Step } from "./types/index.ts"
+import type { MenuInfo, Reservation, ReservationSlot, SlotStatus, Step } from "./types/index.ts"
 // ==========================================
 // 1. HTML DOM取得
 // ==========================================
@@ -81,8 +81,8 @@ const getSelectedMenuValue = (): string | null => {
 */
 async function loadAndRenderSchedule(): Promise<void> {
   try {
-    const reservations: ReservationItem[] = await fetchReservations();
-    bookedReservations = reservations.map((r: ReservationItem): Reservation => ({
+    const reservations: ReservationSlot[] = await fetchReservations();
+    bookedReservations = reservations.map((r: ReservationSlot): Reservation => ({
       start: new Date(r.start_datetime),
       end: new Date(r.end_datetime),
     }));

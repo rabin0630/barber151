@@ -1,5 +1,5 @@
 import { loadMenuManager } from './modules/adminMenu.ts';
-import { createReservation, fetchHistory, fetchReservations } from './services/apiClient.ts';
+import { createReservation, fetchAdminReservations, fetchHistory } from './services/apiClient.ts';
 import type { AdminReservation, HistoryItem, ReservationItem } from './types/index.ts';
 
 const headerRow = document.getElementById('schedule-header') as HTMLTableRowElement;
@@ -35,7 +35,7 @@ if (dateJumpInput) {
 // サーバーから予約情報を取得してカレンダーを描画する関数
 async function loadAndRenderSchedule(): Promise<void> {
   try {
-    const reservations: ReservationItem[] = await fetchReservations();
+    const reservations: ReservationItem[] = await fetchAdminReservations();
     bookedReservations = reservations.map((r: ReservationItem): AdminReservation => ({
       start: new Date(r.start_datetime),
       end: new Date(r.end_datetime),
@@ -54,6 +54,12 @@ async function loadHistory(): Promise<void> {
     renderHistory(await fetchHistory());
   } catch (e: unknown) {
     console.error('履歴データの取得に失敗しました', e);
+    // トークンが違う時などに気づけるよう、エラーを画面にも出す
+    const historyList = document.getElementById('history-list') as HTMLUListElement;
+    const li: HTMLLIElement = document.createElement('li');
+    li.style.cssText = 'padding: 1rem; text-align: center; color: #991b1b;';
+    li.textContent = e instanceof Error ? e.message : '履歴データの取得に失敗しました。';
+    historyList.replaceChildren(li);
   }
 }
 

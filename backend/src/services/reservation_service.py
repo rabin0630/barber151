@@ -9,6 +9,18 @@ from src.models import Reservation
 
 HISTORY_LIMIT = 10
 
+## 日本時間。ダミーの予約を営業時間内に入れるのに使う
+JST = timezone(timedelta(hours=9))
+
+## ダミーの予約のお客様の名前。DEMO_DATAがtrueの時だけ使う
+DEMO_CUSTOMERS: list[str] = ["デモ 太郎", "サンプル 花子", "テスト 一郎", "見本 次郎", "仮名 三郎"]
+
+## ダミーの予約を入れる時刻(日本時間)。所要時間が最大3時間でも重ならず、20時までに終わる
+DEMO_HOURS: list[int] = [10, 15]
+
+## ダミーの予約を入れる日数(明日から)
+DEMO_DAYS = 14
+
 
 def to_utc_naive(value: datetime) -> datetime:
     """日時をUTCのタイムゾーンなしにする。DBにはこの形で保存する
@@ -107,3 +119,40 @@ def create_reservation(
     db.commit()
     db.refresh(reservation)
     return reservation
+
+
+def seed_demo_reservations(db: Session) -> None:
+    """予約が1件もなければ、明日からDEMO_DAYS日分のダミーの予約を登録し、コミットする
+
+    定休日(月・火)を除いた日に、DEMO_HOURSの時刻で入れる。メニューは順番に使う。
+
+    Args:
+        db (Session): DBのセッション
+    """
+    if reservations_crud.count_reservations(db) > 0:
+        return
+    menus = menus_crud.get_active_menus(db)
+    if not menus:
+        return
+
+    today = datetime.now(JST).date()
+    count = 0
+    for offset in range(1, DEMO_DAYS + 1):
+        day = today + timedelta(days=offset)
+        if day.weekday() in (0, 1):  # 月・火は定休日
+            continue
+        for hour in DEMO_HOURS:
+            menu = menus[count % len(menus)]
+            start = to_utc_naive(datetime(day.year, day.month, day.day, hour, tzinfo=JST))
+            reservations_crud.create_reservation(
+                db,
+                DEMO_CUSTOMERS[count % len(DEMO_CUSTOMERS)],
+                None,
+                "090-0000-0000",
+                menu.id,
+                start,
+                start + timedelta(hours=menu.duration),
+                now_utc() - timedelta(hours=count),
+            )
+            count += 1
+    db.commit()
