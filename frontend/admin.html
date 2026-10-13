@@ -15,11 +15,84 @@
       padding: 4px;
       line-height: 1.3;
     }
+
+    /* メニュー管理 */
+    .menu-admin-category {
+      margin-bottom: 1.5rem;
+    }
+    .menu-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .menu-row-new {
+      background: #f9fafb;
+      border-style: dashed;
+    }
+    .menu-row input,
+    .menu-row select {
+      width: auto;
+      min-height: 40px;
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 16px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .menu-row .menu-row-name {
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+    .menu-row-field {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.9rem;
+    }
+    .menu-row-field input {
+      width: 6.5rem;
+    }
+    .menu-row-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+    .menu-row-actions button {
+      min-height: 40px;
+      padding: 0.5rem 1rem;
+      border: 1px solid;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .menu-row-actions button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .menu-save-btn {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #ffffff;
+    }
+    .menu-delete-btn {
+      background: #ffffff;
+      border-color: #fca5a5;
+      color: #dc2626;
+    }
   </style>
 </head>
 <body>
   <header class="site-header">
-    <h1>barber151</h1>
+    <a href="index.html">
+      <h1>barber151</h1>
+    </a>
     <nav class="header-nav">
       <a href="booking.html" class="nav-link">予約画面</a>
       <a href="admin.html" class="nav-link active">管理者画面</a>
@@ -56,6 +129,16 @@
           <li style="padding: 1rem; text-align: center; color: #6b7280;">読み込み中...</li>
         </ul>
       </div>
+
+      <!-- メニュー管理エリア -->
+      <div id="menu-manager-wrapper" style="margin-top: 2.5rem;">
+        <h3 style="margin-bottom: 1rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; color: #111827;">メニュー管理</h3>
+        <p style="font-size: 0.85rem; color: #6b7280; margin-top: 0;">名前・料金・所要時間を入力して「追加」「保存」を押すと、予約画面に反映されます。</p>
+        <div id="menu-status-message" class="status-message" role="alert" style="display: none;"></div>
+        <div id="menu-manager">
+          <p style="text-align: center; color: #6b7280;">読み込み中...</p>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -89,9 +172,6 @@
           <label for="admin-menu-select">メニュー</label>
           <select id="admin-menu-select" required>
             <option value="">選択してください</option>
-            <option value="cut">カット (5000円 / 1時間)</option>
-            <option value="color">カラー (8000円 / 2時間)</option>
-            <option value="perm">パーマ (10000円 / 3時間)</option>
           </select>
         </div>
 

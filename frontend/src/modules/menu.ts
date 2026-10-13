@@ -1,51 +1,19 @@
-const menuPageEL = document.getElementById("step-1-menu");
+import { fetchMenus } from "../services/apiClient.ts";
+import type { MenuCategory, MenuInfo } from "../types/index.ts";
+import { MENU_CATEGORIES } from "./menuCategories.ts";
 
-// メニューの型定義
-interface MenuInfo {
-  id: string;
-  type: string;
-  name: string;
-  price: number;
-  duration: number; // in hours
-}
-
-interface Menucategory {
-  id: string;
-  name: string;
-  icon: string;
-}
-
-// カテゴリのアイコン
-const icons = ["/src/images/barbershop.png", "/src/images/barber-chair.png", "/src/images/hairdresser.png"];
-
-// メニュー
-const menus: MenuInfo[] = [
-  { id: "cut_full", name: "フルコース", price: 6000, duration: 1, type: "cut" },
-  { id: "cut", name: "カット", price: 4000, duration: 1, type: "cut" },
-  { id: "perm_nurepan",name: "濡れパン",price: 9000,duration: 3,type: "perm",},
-  { id: "perm_punch",name: "パンチパーマ",price: 9000,duration: 3,  type: "perm",},
-  { id: "perm_niguro", name: "ニグロ", price: 9000, duration: 3, type: "perm" },
-  { id: "perm_gokudo", name: "極道パーマ", price: 9000, duration: 3, type: "perm" },
-  { id: "color", name: "カラー", price: 8000, duration: 2, type: "color" },
-];
-
-// メニューのカテゴリ
-const menuCategories: Menucategory[] = [
-  { id: "cut", name: "カット", icon: icons[0] },
-  { id: "perm", name: "パーマ", icon: icons[1] },
-  { id: "color", name: "カラー", icon: icons[2] },
-];
+const menuPageEL = document.getElementById("step-1-menu") as HTMLDivElement;
 
 // メニューのカテゴリを作成する関数
-menuCategories.forEach((category) => {
-  let menuCategoryEl = document.createElement("div");
+function renderCategory(category: MenuCategory): HTMLDivElement {
+  const menuCategoryEl: HTMLDivElement = document.createElement("div");
   menuCategoryEl.className = "menu-category";
   menuCategoryEl.id = `menu-category-${category.id}`;
 
-  let menuCategoryTitleEl = document.createElement("h3");
+  const menuCategoryTitleEl: HTMLHeadingElement = document.createElement("h3");
   menuCategoryTitleEl.className = "category-title";
 
-  let menuCategoryIconEl = document.createElement("img");
+  const menuCategoryIconEl: HTMLImageElement = document.createElement("img");
   menuCategoryIconEl.src = category.icon;
   menuCategoryIconEl.className = "category-icon";
   menuCategoryIconEl.width = 30;
@@ -54,37 +22,30 @@ menuCategories.forEach((category) => {
   menuCategoryTitleEl.appendChild(menuCategoryIconEl);
   menuCategoryTitleEl.appendChild(document.createTextNode(category.name));
   menuCategoryEl.appendChild(menuCategoryTitleEl);
-  menuPageEL.appendChild(menuCategoryEl);
-});
+  return menuCategoryEl;
+}
 
 // メニューのカードを作成する関数
-menus.forEach((menu) => {
-  let targetContainer: HTMLElement | null = null;
-
-  targetContainer = document.getElementById(`menu-category-${menu.type}`);
-  if (!targetContainer) return;
-
+function renderMenuCard(menu: MenuInfo, isFirst: boolean): HTMLLabelElement {
   // --- menucard htmlを作成 ---
-  const menuCardDiv = document.createElement("label");
+  const menuCardDiv: HTMLLabelElement = document.createElement("label");
   menuCardDiv.className = "menu-card";
 
-  const menuRadioBtn = document.createElement("input");
+  const menuRadioBtn: HTMLInputElement = document.createElement("input");
   menuRadioBtn.type = "radio";
   menuRadioBtn.name = "menu";
-  menuRadioBtn.value = menu.id;
+  menuRadioBtn.value = String(menu.id);
   // HTMLの仕様に合わせて、1つ目の項目にrequiredを付与
-  if (menu.id === "cut_full") {
-    menuRadioBtn.required = true;
-  }
+  menuRadioBtn.required = isFirst;
 
-  const menuDetailsDiv = document.createElement("div");
+  const menuDetailsDiv: HTMLDivElement = document.createElement("div");
   menuDetailsDiv.className = "menu-details";
 
-  const menuNameSpan = document.createElement("span");
+  const menuNameSpan: HTMLSpanElement = document.createElement("span");
   menuNameSpan.className = "menu-name";
   menuNameSpan.textContent = menu.name;
 
-  const menuPriceSpan = document.createElement("span");
+  const menuPriceSpan: HTMLSpanElement = document.createElement("span");
   menuPriceSpan.className = "menu-price";
   menuPriceSpan.textContent = `${menu.price.toLocaleString()}円`;
 
@@ -93,6 +54,36 @@ menus.forEach((menu) => {
 
   menuCardDiv.appendChild(menuRadioBtn);
   menuCardDiv.appendChild(menuDetailsDiv);
+  return menuCardDiv;
+}
 
-  targetContainer.appendChild(menuCardDiv);
-});
+/**
+ * サーバーからメニューを取得し、Step1にカテゴリごとのカードを描画する
+ * メニューが1件もないカテゴリは表示しない
+ * @returns 取得したメニュー。失敗した時は空配列
+ */
+export async function loadMenus(): Promise<MenuInfo[]> {
+  let menus: MenuInfo[];
+  try {
+    menus = await fetchMenus();
+  } catch (e: unknown) {
+    console.error('メニューの取得に失敗しました', e);
+    menuPageEL.innerHTML = '<p style="text-align: center; color: #991b1b;">メニューを読み込めませんでした。時間をおいて再度お試しください。</p>';
+    return [];
+  }
+
+  menuPageEL.innerHTML = '';
+  let isFirst: boolean = true;
+  MENU_CATEGORIES.forEach((category: MenuCategory) => {
+    const categoryMenus: MenuInfo[] = menus.filter((menu: MenuInfo) => menu.category === category.id);
+    if (categoryMenus.length === 0) return;
+
+    const menuCategoryEl: HTMLDivElement = renderCategory(category);
+    categoryMenus.forEach((menu: MenuInfo) => {
+      menuCategoryEl.appendChild(renderMenuCard(menu, isFirst));
+      isFirst = false;
+    });
+    menuPageEL.appendChild(menuCategoryEl);
+  });
+  return menus;
+}

@@ -1,5 +1,7 @@
 import * as inputs from "./form.ts"
-import * as menu from "./modules/menu.ts"
+import { loadMenus } from "./modules/menu.ts"
+import { createReservation, fetchReservations } from "./services/apiClient.ts"
+import type { MenuInfo, Reservation, ReservationSlot, SlotStatus, Step } from "./types/index.ts"
 // ==========================================
 // 1. HTML DOM取得
 // ==========================================
@@ -23,8 +25,6 @@ const stickyFooter = document.getElementById('sticky-footer') as HTMLDivElement;
 const footerBackBtn = document.getElementById('footer-back-btn') as HTMLButtonElement;
 const footerNextBtn = document.getElementById('footer-next-btn') as HTMLButtonElement;
 
-const menuRadios = document.querySelectorAll('input[name="menu"]') as NodeListOf<HTMLInputElement>;
-
 const prevBtns = document.querySelectorAll('.prev-schedule-btn') as NodeListOf<HTMLButtonElement>;
 const dateJumpInput = document.getElementById('date-jump') as HTMLInputElement;
 const nextBtns = document.querySelectorAll('.next-schedule-btn') as NodeListOf<HTMLButtonElement>;
@@ -42,45 +42,20 @@ const successDatetimeMsg = document.getElementById('success-datetime') as HTMLEl
 const backToHomeBtn = document.getElementById('back-to-home-btn') as HTMLButtonElement;
 
 // ==========================================
-// 2. 型定義
+// 2. 定数
 // ==========================================
-interface Reservation {
-  start: Date;
-  end: Date;
-}
-
-interface MenuInfo {
-  name: string;
-  price: number;
-  duration: number; // in hours
-  type: string;
-}
-
-// ==========================================
-// 3. 定数
-// ==========================================
-
-const MENU_DATA: Record<string, MenuInfo> = {
-  'cut_full': { name: 'フルコース', price: 6000, duration: 1, type: 'cut' },
-  'cut': { name: 'カット', price: 4000, duration: 1, type: 'cut' },
-  'perm_nurepan': { name: '濡れパン', price: 9000, duration: 3, type: 'perm' },
-  'perm_punch': { name: 'パンチパーマ', price: 9000, duration: 3, type: 'perm' },
-  'perm_niguro': { name: 'ニグロ', price: 9000, duration: 3, type: 'perm' },
-  'perm_gokudo': { name: '極道パーマ', price: 9000, duration: 3, type: 'perm' },
-  'color': { name: 'カラー', price: 8000, duration: 2, type: 'color' },
-};
-
-/** 確定済みの予約データをすべて取得するurlである */
-const ReservationUrl: string = 'http://localhost:8000/reservations';
 
 /** 予約可能最大日である */
 const maxDate: Date = new Date();
 maxDate.setMonth(maxDate.getMonth() + 2); // 2ヶ月先まで予約可能と設定
 
 // ==========================================
-// 4. 変数
+// 3. 変数
 // ==========================================
-let currentStep = 1;
+let currentStep: Step = 1;
+
+/** サーバーから取得したメニューである。キーはメニューID（ラジオボタンのvalue） */
+let menuData: Record<string, MenuInfo> = {};
 
 // --- スケジュール表示の管理変数である ---
 /** カレンダーに表示する最初の日である */
@@ -92,7 +67,7 @@ let daysToShow: number = (window.innerWidth <= 600) ? 5 : 7; // スマホは5日
 let bookedReservations: Reservation[] = [];
 
 // ==========================================
-// 5. 関数
+// 4. 関数
 // ==========================================
 /** --選択したメニューの値を取得する関数-- */
 const getSelectedMenuValue = (): string | null => {
@@ -104,17 +79,14 @@ const getSelectedMenuValue = (): string | null => {
  * 1. 予約情報の開始時刻と終了時刻を配列に格納する
  * 2. スケジュールを描写するのである
 */
-async function loadAndRenderSchedule() {
+async function loadAndRenderSchedule(): Promise<void> {
   try {
-    const res: Response = await fetch(ReservationUrl);
-    if (res.ok) {
-      const data: any = await res.json();
-      bookedReservations = data.reservations.map((r: any) => ({
-        start: new Date(r.start_datetime),
-        end: new Date(r.end_datetime),
-      }));
-    }
-  } catch (e) {
+    const reservations: ReservationSlot[] = await fetchReservations();
+    bookedReservations = reservations.map((r: ReservationSlot): Reservation => ({
+      start: new Date(r.start_datetime),
+      end: new Date(r.end_datetime),
+    }));
+  } catch (e: unknown) {
     console.error('予約データの取得に失敗しました', e);
   }
   renderSchedule(currentStartDate);
@@ -123,18 +95,18 @@ async function loadAndRenderSchedule() {
 /**
  * 必須項目が入力されているか確認し、次へ進むボタンを無効化/有効化する関数である
  */
-const updateNextBtnState = () => {
+const updateNextBtnState = (): void => {
   let isEnabled: boolean = false;
   if (currentStep === 1) {
-    const menuVal = getSelectedMenuValue();
+    const menuVal: string | null = getSelectedMenuValue();
     isEnabled = !!menuVal;
   } else if (currentStep === 2) {
-    const datetimeVal = (document.getElementById('selected-datetime') as HTMLInputElement).value;
+    const datetimeVal: string = (document.getElementById('selected-datetime') as HTMLInputElement).value;
     isEnabled = !!datetimeVal;
   } else if (currentStep === 3) {
-    const isNameFilled = inputs.name.value.trim() !== '';
-    const isInstagramFilled = inputs.instagram.value.trim() !== '';
-    const isPhoneFilled = inputs.phone.value.trim() !== '';
+    const isNameFilled: boolean = inputs.name.value.trim() !== '';
+    const isInstagramFilled: boolean = inputs.instagram.value.trim() !== '';
+    const isPhoneFilled: boolean = inputs.phone.value.trim() !== '';
     isEnabled = isNameFilled && (isInstagramFilled || isPhoneFilled);
   }
   footerNextBtn.disabled = !isEnabled;
@@ -145,12 +117,12 @@ const updateNextBtnState = () => {
  * 1. 選択したメニューの表示
  * 2. 選択した予約日付の表示、時間計算
  */
-const updateSummary = () => {
+const updateSummary = (): void => {
   /** ---1. 選択したメニューの表示--- */
-  const menuVal = getSelectedMenuValue();
+  const menuVal: string | null = getSelectedMenuValue();
 
-  if (menuVal && MENU_DATA[menuVal]) {
-    const menuInfo = MENU_DATA[menuVal];
+  if (menuVal && menuData[menuVal]) {
+    const menuInfo: MenuInfo = menuData[menuVal];
     summaryMenu.textContent = `${menuInfo.name} (${menuInfo.price.toLocaleString()}円)`;
   } else {
     summaryMenu.textContent = '未選択';
@@ -159,12 +131,12 @@ const updateSummary = () => {
   /** --2. 選択した予約日付の表示、時間計算 */
   const datetimeInput = document.getElementById('selected-datetime') as HTMLInputElement;
   const datetimeVal: string = datetimeInput.value;
-  if (datetimeVal && menuVal && MENU_DATA[menuVal]) {
+  if (datetimeVal && menuVal && menuData[menuVal]) {
     const d: Date = new Date(datetimeVal);
     const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
     // 所要時間がある場合は終了時間を計算して表示。
-    const endHour: number = d.getHours() + MENU_DATA[menuVal].duration;
-    const datetimeText = `${d.getMonth() + 1}月${d.getDate()}日(${dayOfWeek}) ${d.getHours()}:00~${endHour}:00`;
+    const endHour: number = d.getHours() + menuData[menuVal].duration;
+    const datetimeText: string = `${d.getMonth() + 1}月${d.getDate()}日(${dayOfWeek}) ${d.getHours()}:00~${endHour}:00`;
     summaryDatetime.textContent = datetimeText;
   } else {
     summaryDatetime.textContent = '未選択';
@@ -174,7 +146,7 @@ const updateSummary = () => {
 /**スケジュールを描写する関数である
  * 第一引数にはスケジュール開始日を渡すのである
  */
-function renderSchedule(startDate: Date) {
+function renderSchedule(startDate: Date): void {
 
   if (dateJumpInput) {
     const startStr: string = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
@@ -199,7 +171,7 @@ function renderSchedule(startDate: Date) {
   let colspanCount: number = 0;
 
   /** ---2.セルのレンダリング--- */
-  for (let i = 0; i < daysToShow; i++) {
+  for (let i: number = 0; i < daysToShow; i++) {
 
     const d: Date = new Date(startDate);
     d.setDate(startDate.getDate() + i);
@@ -237,15 +209,15 @@ function renderSchedule(startDate: Date) {
   const now: Date = new Date();
 
 
-  const menuVal = getSelectedMenuValue();
+  const menuVal: string | null = getSelectedMenuValue();
   let duration: number = 1; // 未選択またはデフォルトは1時間
-  if (menuVal && MENU_DATA[menuVal]) {
-    duration = MENU_DATA[menuVal].duration;
+  if (menuVal && menuData[menuVal]) {
+    duration = menuData[menuVal].duration;
   }
 
   /** ---2. セルのレンダリング--- */
   // 1枠単体が空いているか判定する関数
-  const getSlotStatus = (date: Date, startHour: number) => {
+  const getSlotStatus = (date: Date, startHour: number): SlotStatus => {
     const day: number = date.getDay();
     const slotStart: Date = new Date(date);
     slotStart.setHours(startHour, 0, 0, 0);
@@ -265,14 +237,14 @@ function renderSchedule(startDate: Date) {
   };
 
 
-  for (let hour = 8; hour <= 19; hour++) {
+  for (let hour: number = 8; hour <= 19; hour++) {
     // セルを作成しそこに時間を表示する（8:00から19:00まで）
     const tr: HTMLTableRowElement = document.createElement('tr');
     const timeTd: HTMLTableCellElement = document.createElement('td');
     timeTd.textContent = `${hour}:00`;
     tr.appendChild(timeTd);
 
-    dates.forEach(date => {
+    dates.forEach((date: Date) => {
       /** --1. セルの作成-- */
       // セルを作成する
       const td: HTMLTableCellElement = document.createElement('td');
@@ -281,7 +253,7 @@ function renderSchedule(startDate: Date) {
       slotTime.setHours(hour, 0, 0, 0);
 
       /** --2.状態表示-- */
-      const status: string = getSlotStatus(date, hour);
+      const status: SlotStatus = getSlotStatus(date, hour);
       if (status === 'unavailable') {
         td.textContent = '-';
         td.className = 'holiday';
@@ -298,7 +270,7 @@ function renderSchedule(startDate: Date) {
         // カレンダー切り替え時などに、選択済みの時間ならスタイルを復元
         const currentSelected: string = (document.getElementById('selected-datetime') as HTMLInputElement).value;
         if (currentSelected) {
-          for (let i = 0; i < duration; i++) {
+          for (let i: number = 0; i < duration; i++) {
             const targetTime: Date = new Date(currentSelected);
             targetTime.setHours(targetTime.getHours() + i);
             if (targetTime.getTime() === slotTime.getTime()) {
@@ -314,7 +286,7 @@ function renderSchedule(startDate: Date) {
 
           // 所要時間分の連続した空きがあるかチェック
           let canBook: boolean = true;
-          for (let i = 0; i < duration; i++) {
+          for (let i: number = 0; i < duration; i++) {
             const checkHour: number = hour + i;
             if (checkHour > 19) {
               canBook = false;
@@ -331,13 +303,13 @@ function renderSchedule(startDate: Date) {
           }
 
 
-          document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
+          document.querySelectorAll<HTMLButtonElement>('.time-slot-btn').forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
 
           // 所要時間分だけボタンを青く（選択状態に）する
-          for (let i = 0; i < duration; i++) {
+          for (let i: number = 0; i < duration; i++) {
             const t: Date = new Date(slotTime);
             t.setHours(t.getHours() + i);
-            const targetBtn: Element | null = document.querySelector(`.time-slot-btn[data-datetime="${t.toISOString()}"]`);
+            const targetBtn: HTMLButtonElement | null = document.querySelector<HTMLButtonElement>(`.time-slot-btn[data-datetime="${t.toISOString()}"]`);
             if (targetBtn) {
               targetBtn.classList.add('selected');
             }
@@ -359,12 +331,12 @@ function renderSchedule(startDate: Date) {
 }
 
 // スクロール追従時のオフセット計算処理
-function updateStickyHeaderOffset() {
-  const stepIndicator = document.querySelector('.step-indicator') as HTMLElement;
-  const menuInfo = document.querySelector('#selected-menu-info') as HTMLElement;
-  const monthRow = document.getElementById('schedule-header-month') as HTMLTableRowElement;
+function updateStickyHeaderOffset(): void {
+  const stepIndicator = document.querySelector('.step-indicator') as HTMLElement | null;
+  const menuInfo = document.querySelector('#selected-menu-info') as HTMLElement | null;
+  const monthRow = document.getElementById('schedule-header-month') as HTMLTableRowElement | null;
 
-  let indicatorHeight = 0;
+  let indicatorHeight: number = 0;
 
   if (stepIndicator) {
     indicatorHeight = stepIndicator.getBoundingClientRect().height;
@@ -374,15 +346,15 @@ function updateStickyHeaderOffset() {
   document.documentElement.style.setProperty('--sticky-menu-top', `${indicatorHeight}px`);
 
   // 上段ヘッダー（年月）の高さを取得（未描画時はデフォルト28px）
-  let monthRowHeight = 28;
+  let monthRowHeight: number = 28;
   if (monthRow) {
-    const rectHeight = monthRow.getBoundingClientRect().height;
+    const rectHeight: number = monthRow.getBoundingClientRect().height;
     if (rectHeight > 0) {
       monthRowHeight = rectHeight;
     }
   }
 
-  const isMobile = window.innerWidth <= 600;
+  const isMobile: boolean = window.innerWidth <= 600;
   if (!isMobile) {
     // デスクトップでは表自体が独立してスクロールするため、ヘッダー位置は0
     document.documentElement.style.setProperty('--sticky-table-header-month-top', '0px');
@@ -390,7 +362,7 @@ function updateStickyHeaderOffset() {
     return;
   }
 
-  let offset = indicatorHeight;
+  let offset: number = indicatorHeight;
   // Step2が表示されている場合のみメニュー表示エリアの高さを含める
   if (menuInfo && menuInfo.offsetParent !== null) {
     offset += menuInfo.getBoundingClientRect().height;
@@ -401,18 +373,18 @@ function updateStickyHeaderOffset() {
 }
 
 // ==========================================
-// 6. イベントリスナー
+// 5. イベントリスナー
 // ==========================================
 
 // ステップ遷移ロジック
 footerNextBtn.addEventListener('click', () => {
   if (currentStep === 1) {
-    const menuVal = getSelectedMenuValue();
-    if (!menuVal || !MENU_DATA[menuVal]) {
+    const menuVal: string | null = getSelectedMenuValue();
+    if (!menuVal || !menuData[menuVal]) {
       return;
     }
 
-    const menuInfo = MENU_DATA[menuVal];
+    const menuInfo: MenuInfo = menuData[menuVal];
     step2MenuName.textContent = menuInfo.name;
     step2MenuPrice.textContent = menuInfo.price.toLocaleString();
     step2MenuDuration.textContent = menuInfo.duration.toString();
@@ -433,7 +405,7 @@ footerNextBtn.addEventListener('click', () => {
     // Step2が表示された直後にオフセットを再計算
     requestAnimationFrame(() => updateStickyHeaderOffset());
   } else if (currentStep === 2) {
-    const datetimeVal = (document.getElementById('selected-datetime') as HTMLInputElement).value;
+    const datetimeVal: string = (document.getElementById('selected-datetime') as HTMLInputElement).value;
     if (!datetimeVal) {
       return;
     }
@@ -516,28 +488,29 @@ if (dateJumpInput) {
 }
 
 // メニュー変更時にサマリーとスケジュールを更新
-menuRadios.forEach(radio => {
-  radio.addEventListener('change', () => {
-    (document.getElementById('selected-datetime') as HTMLInputElement).value = ''; // 必要な枠数が変わるため選択日時をリセット
-    updateSummary();
-    renderSchedule(currentStartDate);
-    updateNextBtnState();
-  });
+// ラジオボタンはメニュー取得後に描画されるため、Step1全体で変更を受け取る
+step1Menu.addEventListener('change', (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  if (target.name !== 'menu') return;
+  (document.getElementById('selected-datetime') as HTMLInputElement).value = ''; // 必要な枠数が変わるため選択日時をリセット
+  updateSummary();
+  renderSchedule(currentStartDate);
+  updateNextBtnState();
 });
 
-[inputs.name, inputs.instagram, inputs.phone].forEach(input => {
+[inputs.name, inputs.instagram, inputs.phone].forEach((input: HTMLInputElement) => {
   input.addEventListener('input', updateNextBtnState);
 });
 
 // 矢印ボタンのイベントリスナー
-nextBtns.forEach(btn => {
+nextBtns.forEach((btn: HTMLButtonElement) => {
   btn.addEventListener('click', () => {
     currentStartDate.setDate(currentStartDate.getDate() + daysToShow);
     renderSchedule(currentStartDate);
   });
 });
 
-prevBtns.forEach(btn => {
+prevBtns.forEach((btn: HTMLButtonElement) => {
   btn.addEventListener('click', () => {
     currentStartDate.setDate(currentStartDate.getDate() - daysToShow);
     const today: Date = new Date();
@@ -550,12 +523,12 @@ prevBtns.forEach(btn => {
   });
 });
 
-form.addEventListener('submit', async (e) => {
+form.addEventListener('submit', async (e: SubmitEvent) => {
   e.preventDefault();
   const customerName: string = inputs.name.value;
   const instagramId: string = inputs.instagram.value;
   const phoneNumber: string = inputs.phone.value;
-  const menuId: string = getSelectedMenuValue() || '';
+  const menuId: number = Number(getSelectedMenuValue());
   const datetime: string = (document.getElementById('selected-datetime') as HTMLInputElement).value;
 
   if (!instagramId.trim() && !phoneNumber.trim()) {
@@ -567,22 +540,13 @@ form.addEventListener('submit', async (e) => {
   }
 
   try {
-    const response: Response = await fetch('http://localhost:8000/reservations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: customerName,
-        instagram_id: instagramId,
-        phone_number: phoneNumber,
-        menu_id: menuId,
-        reservation_date: datetime
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || '予約に失敗しました。');
-    }
+    await createReservation({
+      name: customerName,
+      instagram_id: instagramId,
+      phone_number: phoneNumber,
+      menu_id: menuId,
+      reservation_date: datetime
+    }, '予約に失敗しました。');
 
     // 予約完了画面への切り替え
     const selectedDatetimeStr: string | null = summaryDatetime.textContent; // 例: "4/30(火) 10:00 〜 11:00"
@@ -604,9 +568,9 @@ form.addEventListener('submit', async (e) => {
     updateSummary();
     currentStartDate = new Date(); // 予約完了後は今日の日付に戻す
     loadAndRenderSchedule(); // サーバーから最新の予約状況を再取得
-  } catch (e: any) {
+  } catch (e: unknown) {
     // 送信失敗時の処理
-    alert(e.message || 'サーバーエラーが発生しました。再度お試しください。');
+    alert((e instanceof Error && e.message) || 'サーバーエラーが発生しました。再度お試しください。');
   }
 });
 
@@ -636,5 +600,9 @@ document.addEventListener('DOMContentLoaded', () => {
   updateNextBtnState(); // 初期ロード時の状態をセット
 });
 
-// 初期表示としてスケジュールを生成
+// 初期表示としてメニューとスケジュールを生成
+loadMenus().then((menus: MenuInfo[]) => {
+  menuData = Object.fromEntries(menus.map((menu: MenuInfo) => [String(menu.id), menu]));
+  updateNextBtnState();
+});
 loadAndRenderSchedule();
