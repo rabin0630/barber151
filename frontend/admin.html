@@ -364,6 +364,10 @@
 
       <dl class="contact-list">
         <div class="contact-row">
+          <dt>お名前</dt>
+          <dd id="contact-name"></dd>
+        </div>
+        <div class="contact-row">
           <dt>予約日時</dt>
           <dd id="contact-datetime"></dd>
         </div>
@@ -407,7 +411,7 @@
     </div>
   </div>
 
-  <!-- 電話番号・Instagramの編集モーダル。連絡先モーダルの上に重ねる -->
+  <!-- 名前・電話番号・Instagramの編集モーダル。連絡先モーダルの上に重ねる -->
   <div id="contact-edit-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="contact-edit-title" style="max-width: 420px;">
       <div class="contact-edit-header">
@@ -416,6 +420,15 @@
       </div>
 
       <div id="contact-edit-message" class="status-message" role="alert" style="display: none;"></div>
+
+      <!-- 名前の時だけ表示する -->
+      <div id="contact-edit-name-field" class="form-group" style="margin-bottom: 0;">
+        <label for="contact-edit-name">お名前</label>
+        <div class="contact-edit-field">
+          <input type="text" id="contact-edit-name" placeholder="例: 山田 太郎">
+          <button type="button" class="submit-btn contact-edit-save-btn" style="display: none;">保存</button>
+        </div>
+      </div>
 
       <!-- 電話番号の時だけ表示する -->
       <div id="contact-edit-phone-field" class="form-group" style="margin-bottom: 0;">

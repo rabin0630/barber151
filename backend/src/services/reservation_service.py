@@ -268,6 +268,32 @@ def change_reservation_contacts(
     return reservation
 
 
+def change_reservation_name(db: Session, reservation_id: int, customer_name: str) -> Reservation:
+    """予約のお客様の名前を書き換え、コミットする。前後の空白は取り除く
+
+    Args:
+        db (Session): DBのセッション
+        reservation_id (int): 予約ID
+        customer_name (str): 新しい名前
+
+    Returns:
+        Reservation: 変更した予約
+
+    Raises:
+        AppError: 変更できない時。次のどれか
+            - 予約がない、またはすでに取り消し済み(404)
+            - 名前が空(400)
+    """
+    reservation = get_confirmed_reservation(db, reservation_id)
+    customer_name = customer_name.strip()
+    if not customer_name:
+        raise AppError(400, "お名前を入力してください。")
+    reservation.customer_name = customer_name
+    db.commit()
+    db.refresh(reservation)
+    return reservation
+
+
 def cancel_reservation(db: Session, reservation_id: int) -> None:
     """予約を取り消し(論理削除)、コミットする
 

@@ -63,6 +63,15 @@ class ChangeReservationContactsRequest(BaseModel):
     phone_number: str | None = None
 
 
+class ChangeReservationNameRequest(BaseModel):
+    """PATCH /admin/reservations/{reservation_id}/nameのリクエスト
+
+    Attributes:
+        customer_name (str): 新しいお客様の名前
+    """
+    customer_name: str
+
+
 class ReservationSlot(UtcDatetimeModel):
     """GET /reservationsの1件分。だれでも見られるので、お客様の情報は入れない
 

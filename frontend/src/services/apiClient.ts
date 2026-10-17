@@ -87,6 +87,17 @@ export async function changeReservationMenu(id: number, menuId: number): Promise
   return res.json();
 }
 
+// 予約のお客様の名前を書き換える（管理画面用）
+export async function changeReservationName(id: number, customerName: string): Promise<ReservationItem> {
+  const res: Response = await fetch(`${API_BASE_URL}/admin/reservations/${id}/name`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...adminHeaders() },
+    body: JSON.stringify({ customer_name: customerName }),
+  });
+  if (!res.ok) await throwApiError(res, '名前の保存に失敗しました。');
+  return res.json();
+}
+
 // 予約の連絡先（InstagramのIDと電話番号）を書き換える。2つとも今の値を送る（管理画面用）
 export async function changeReservationContacts(
   id: number,

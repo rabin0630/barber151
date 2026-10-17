@@ -7,6 +7,7 @@ from src.models import Reservation
 from src.schemas.reservations import (
     ChangeReservationContactsRequest,
     ChangeReservationMenuRequest,
+    ChangeReservationNameRequest,
     CreateReservationRequest,
     CreateReservationResponse,
     HistoryItem,
@@ -126,6 +127,31 @@ def change_reservation_contacts(
     reservation = reservation_service.change_reservation_contacts(
         db, reservation_id, request.instagram_id, request.phone_number
     )
+    return to_reservation_item(reservation)
+
+
+@router.patch(
+    "/admin/reservations/{reservation_id}/name",
+    response_model=ReservationItem,
+    dependencies=[Depends(require_admin)],
+)
+def change_reservation_name(
+    reservation_id: int, request: ChangeReservationNameRequest, db: Session = Depends(get_db)
+) -> ReservationItem:
+    """PATCH /admin/reservations/{reservation_id}/name: 予約のお客様の名前を書き換える(管理用)
+
+    Args:
+        reservation_id (int): 予約ID
+        request (ChangeReservationNameRequest): 新しい名前
+        db (Session): DBのセッション
+
+    Returns:
+        ReservationItem: 変更した予約
+
+    Raises:
+        AppError: 変更できない時(reservation_service.change_reservation_nameと同じ)
+    """
+    reservation = reservation_service.change_reservation_name(db, reservation_id, request.customer_name)
     return to_reservation_item(reservation)
 
 

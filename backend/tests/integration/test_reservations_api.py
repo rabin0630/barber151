@@ -342,6 +342,31 @@ def test_change_reservation_contacts_errors(client: TestClient, admin_client: Te
     assert client.patch("/admin/reservations/1/contacts", json=body).status_code == 401
 
 
+def test_change_reservation_name(admin_client: TestClient, db: Session):
+    # 名前を書き換える。前後の空白は取り除く
+    reserve(admin_client, "2026-10-12T01:00:00.000Z")
+
+    response = admin_client.patch("/admin/reservations/1/name", json={"customer_name": " 山田 花子　"})
+
+    assert response.status_code == 200
+    assert response.json()["customer_name"] == "山田 花子"
+    assert db.get(Reservation, 1).customer_name == "山田 花子"
+
+
+def test_change_reservation_name_errors(client: TestClient, admin_client: TestClient, db: Session):
+    # 空の名前は400、ない予約は404、トークンがないと401。どれも変えない
+    reserve(client, "2026-10-12T01:00:00.000Z")
+
+    blank = admin_client.patch("/admin/reservations/1/name", json={"customer_name": "　"})
+
+    assert blank.status_code == 400
+    assert blank.json() == {"detail": "お名前を入力してください。"}
+    assert admin_client.patch("/admin/reservations/999/name", json={"customer_name": "a"}).status_code == 404
+    client.headers.pop("Authorization")
+    assert client.patch("/admin/reservations/1/name", json={"customer_name": "a"}).status_code == 401
+    assert db.get(Reservation, 1).customer_name == "山田"
+
+
 def test_get_history(admin_client: TestClient):
     # 新しく作られた順に、最大10件返す
     for hour in range(11):
