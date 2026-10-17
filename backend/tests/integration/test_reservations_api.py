@@ -1,5 +1,5 @@
 """/reservations、/admin/reservations、/historyの結合テスト"""
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -401,7 +401,7 @@ def test_admin_token_not_set(admin_client: TestClient, monkeypatch):
 
 
 def test_seed_demo_reservations(db: Session):
-    # 定休日(月・火)を除いた日に、重ならないダミーの予約を入れる。2回目は何もしない
+    # 定休日(月・火)を除いた日に、重ならないダミーの予約を入れる。2回目は入れ直すので、件数は変わらない
     reservation_service.seed_demo_reservations(db)
     reservations = db.query(Reservation).order_by(Reservation.start_datetime).all()
 
@@ -413,9 +413,39 @@ def test_seed_demo_reservations(db: Session):
         assert 8 <= start_jst.hour and end_jst.hour <= 20
     for before, after in zip(reservations, reservations[1:]):
         assert before.end_datetime <= after.start_datetime
+    # お客様の名前とInstagramのIDは、DEMO_CUSTOMERSから順に使う
+    assert (reservations[0].customer_name, reservations[0].instagram_id) == reservation_service.DEMO_CUSTOMERS[0]
+    for name, instagram_id in reservation_service.DEMO_CUSTOMERS:
+        assert reservation_service.INSTAGRAM_ID_PATTERN.fullmatch(instagram_id)
 
     reservation_service.seed_demo_reservations(db)
     assert db.query(Reservation).count() == len(reservations)
+
+
+def test_seed_demo_reservations_replaces_all(client: TestClient, db: Session):
+    # 入れ直す時は、今ある予約をすべて消す
+    reserve(client, "2026-10-12T01:00:00.000Z")
+
+    reservation_service.seed_demo_reservations(db)
+
+    assert db.query(Reservation).filter(Reservation.customer_name == "山田").count() == 0
+
+
+def test_demo_reservations_expire(client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch):
+    # デモ中に作った予約は5分たったら消え、同じ時間にまた予約できる。ダミーの予約は消えない
+    start = datetime(2026, 10, 12, 12, 0)
+    monkeypatch.setattr(reservation_service, "now_utc", lambda: start)
+    reservation_service.seed_demo_reservations(db)
+    demo_count = db.query(Reservation).count()
+    monkeypatch.setattr(reservation_service, "now_utc", lambda: start + timedelta(minutes=1))
+    reserve(client, "2030-01-08T01:00:00.000Z")
+
+    monkeypatch.setattr(reservation_service, "now_utc", lambda: start + timedelta(minutes=5))
+    assert len(client.get("/reservations").json()["reservations"]) == demo_count + 1
+
+    monkeypatch.setattr(reservation_service, "now_utc", lambda: start + timedelta(minutes=6))
+    assert len(client.get("/reservations").json()["reservations"]) == demo_count
+    assert reserve(client, "2030-01-08T01:00:00.000Z").status_code == 200
 
 
 @pytest.mark.parametrize("phone_number", ["09012345678", "090-1234-5678", "090 1234 5678", "０９０－１２３４－５６７８"])

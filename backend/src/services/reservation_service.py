@@ -22,14 +22,35 @@ FULLWIDTH_DIGITS = str.maketrans("０１２３４５６７８９", "0123456789")
 ## 日本時間。ダミーの予約を営業時間内に入れるのに使う
 JST = timezone(timedelta(hours=9))
 
-## ダミーの予約のお客様の名前。DEMO_DATAがtrueの時だけ使う
-DEMO_CUSTOMERS: list[str] = ["デモ 太郎", "サンプル 花子", "テスト 一郎", "見本 次郎", "仮名 三郎"]
+## ダミーの予約のお客様の(名前, InstagramのID)。DEMO_DATAがtrueの時だけ使う
+## 著名人とサッカー選手の公式アカウント。電話番号はすべてDEMO_PHONE_NUMBERにする
+DEMO_CUSTOMERS: list[tuple[str, str]] = [
+    ("ジャスティン・ビーバー", "justinbieber"),
+    ("アリアナ・グランデ", "arianagrande"),
+    ("ティム・クック", "tim_cook"),
+    ("テイラー・スウィフト", "taylorswift"),
+    ("ドウェイン・ジョンソン", "therock"),
+    ("セレーナ・ゴメス", "selenagomez"),
+    ("クリスティアーノ・ロナウド", "cristiano"),
+    ("リオネル・メッシ", "leomessi"),
+    ("ネイマール", "neymarjr"),
+]
+
+## ダミーの予約の電話番号
+DEMO_PHONE_NUMBER = "090-0000-0000"
 
 ## ダミーの予約を入れる時刻(日本時間)。所要時間が最大3時間でも重ならず、20時までに終わる
 DEMO_HOURS: list[int] = [10, 15]
 
 ## ダミーの予約を入れる日数(明日から)
 DEMO_DAYS = 14
+
+## デモ中に作られた予約を消すまでの時間。見に来た人が試した予約がたまらないようにする
+DEMO_RESERVATION_LIFETIME = timedelta(minutes=5)
+
+## ダミーの予約を入れ直した日時(UTC)。これより後に作られた予約は、DEMO_RESERVATION_LIFETIMEで消す
+## デモでない時はNoneのままで、何も消さない
+demo_seeded_at: datetime | None = None
 
 ## InstagramのIDの形式。英数字・ピリオド・アンダースコアで30文字以内
 INSTAGRAM_ID_PATTERN = re.compile(r"[A-Za-z0-9._]{1,30}")
@@ -60,8 +81,25 @@ def now_utc() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def delete_expired_demo_reservations(db: Session) -> None:
+    """デモ中に作られ、DEMO_RESERVATION_LIFETIMEを過ぎた予約を消し、コミットする
+
+    予約画面・管理画面のどちらから作った予約も消す。ダミーの予約は消さない。
+    デモでない時(demo_seeded_atがNone)は何もしない。
+
+    Args:
+        db (Session): DBのセッション
+    """
+    if demo_seeded_at is None:
+        return
+    reservations_crud.delete_reservations_created_between(
+        db, demo_seeded_at, now_utc() - DEMO_RESERVATION_LIFETIME
+    )
+    db.commit()
+
+
 def list_confirmed_reservations(db: Session) -> list[Reservation]:
-    """確定済みの予約をすべて返す
+    """確定済みの予約をすべて返す。デモ中は、時間が過ぎた予約を先に消す
 
     Args:
         db (Session): DBのセッション
@@ -69,11 +107,12 @@ def list_confirmed_reservations(db: Session) -> list[Reservation]:
     Returns:
         list[Reservation]: 確定済みの予約
     """
+    delete_expired_demo_reservations(db)
     return reservations_crud.get_confirmed_reservations(db)
 
 
 def list_history(db: Session) -> list[Reservation]:
-    """新しく作られた順に、予約をHISTORY_LIMIT件返す
+    """新しく作られた順に、予約をHISTORY_LIMIT件返す。デモ中は、時間が過ぎた予約を先に消す
 
     Args:
         db (Session): DBのセッション
@@ -81,6 +120,7 @@ def list_history(db: Session) -> list[Reservation]:
     Returns:
         list[Reservation]: 新しい順の予約
     """
+    delete_expired_demo_reservations(db)
     return reservations_crud.get_latest_reservations(db, HISTORY_LIMIT)
 
 
@@ -172,6 +212,8 @@ def create_reservation(
     start = to_utc_naive(reservation_date)
     end = start + timedelta(hours=menu.duration)
 
+    # デモ中に時間が過ぎた予約の枠は、また予約できるようにする
+    delete_expired_demo_reservations(db)
     if reservations_crud.count_overlapping_reservations(db, start, end) > 0:
         raise AppError(400, "申し訳ありません。この時間はすでに予約が埋まっています。")
 
@@ -312,18 +354,18 @@ def cancel_reservation(db: Session, reservation_id: int) -> None:
 
 
 def seed_demo_reservations(db: Session) -> None:
-    """予約が1件もなければ、明日からDEMO_DAYS日分のダミーの予約を登録し、コミットする
+    """予約をすべて消し、明日からDEMO_DAYS日分のダミーの予約を入れ直して、コミットする
 
-    定休日(月・火)を除いた日に、DEMO_HOURSの時刻で入れる。メニューは順番に使う。
+    デモ用。起動するたびに呼び、名前や日付をいつも新しくする。
+    定休日(月・火)を除いた日に、DEMO_HOURSの時刻で入れる。メニューとお客様は順番に使う。
+    入れ直した日時をdemo_seeded_atに置き、これより後に作られた予約を時間が過ぎたら消すようにする。
 
     Args:
         db (Session): DBのセッション
     """
-    if reservations_crud.count_reservations(db) > 0:
-        return
+    global demo_seeded_at
+    reservations_crud.delete_all_reservations(db)
     menus = menus_crud.get_active_menus(db)
-    if not menus:
-        return
 
     today = datetime.now(JST).date()
     count = 0
@@ -334,11 +376,12 @@ def seed_demo_reservations(db: Session) -> None:
         for hour in DEMO_HOURS:
             menu = menus[count % len(menus)]
             start = to_utc_naive(datetime(day.year, day.month, day.day, hour, tzinfo=JST))
+            customer_name, instagram_id = DEMO_CUSTOMERS[count % len(DEMO_CUSTOMERS)]
             reservations_crud.create_reservation(
                 db,
-                DEMO_CUSTOMERS[count % len(DEMO_CUSTOMERS)],
-                None,
-                "090-0000-0000",
+                customer_name,
+                instagram_id,
+                DEMO_PHONE_NUMBER,
                 menu.id,
                 start,
                 start + timedelta(hours=menu.duration),
@@ -346,3 +389,4 @@ def seed_demo_reservations(db: Session) -> None:
             )
             count += 1
     db.commit()
+    demo_seeded_at = now_utc()

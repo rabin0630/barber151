@@ -10,16 +10,26 @@ CONFIRMED = "confirmed"
 CANCELLED = "cancelled"
 
 
-def count_reservations(db: Session) -> int:
-    """予約の件数を数える
+def delete_all_reservations(db: Session) -> None:
+    """予約をすべて消す。コミットしない
 
     Args:
         db (Session): DBのセッション
-
-    Returns:
-        int: 予約の件数
     """
-    return db.query(func.count(Reservation.id)).scalar()
+    db.query(Reservation).delete()
+
+
+def delete_reservations_created_between(db: Session, after: datetime, until: datetime) -> None:
+    """作成日時が(after, until]の予約を消す。コミットしない
+
+    Args:
+        db (Session): DBのセッション
+        after (datetime): この日時より後に作られた予約を消す(UTC、タイムゾーンなし)
+        until (datetime): この日時までに作られた予約を消す(UTC、タイムゾーンなし)
+    """
+    db.query(Reservation).filter(
+        Reservation.created_at > after, Reservation.created_at <= until
+    ).delete()
 
 
 def get_reservation_by_id(db: Session, reservation_id: int) -> Reservation | None:
