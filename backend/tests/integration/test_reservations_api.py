@@ -1,6 +1,7 @@
 """/reservations、/admin/reservations、/historyの結合テスト"""
 from datetime import timezone
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -57,6 +58,42 @@ def test_contact_required(client: TestClient, db: Session):
 
     assert response.status_code == 400
     assert response.json() == {"detail": "Instagram ID または 電話番号のどちらかを入力してください。"}
+    assert db.query(Reservation).count() == 0
+
+
+def test_contact_blank_only(client: TestClient, db: Session):
+    # 空白だけのInstagramのIDや電話番号は、入力なしとして扱う
+    response = reserve(client, "2026-10-12T01:00:00.000Z", instagram_id="  ", phone_number="　")
+
+    assert response.status_code == 400
+    assert db.query(Reservation).count() == 0
+
+
+def test_contact_instagram_only(client: TestClient, db: Session):
+    # InstagramのIDだけでも登録できる。前後の空白は取り除く
+    response = reserve(client, "2026-10-12T01:00:00.000Z", instagram_id=" barber151 ")
+
+    assert response.status_code == 200
+    reservation = db.query(Reservation).one()
+    assert reservation.instagram_id == "barber151"
+    assert reservation.phone_number is None
+
+
+def test_instagram_id_at_mark(client: TestClient, db: Session):
+    # 先頭の@は取り除いて保存する
+    response = reserve(client, "2026-10-12T01:00:00.000Z", instagram_id="@barber_151.jp")
+
+    assert response.status_code == 200
+    assert db.query(Reservation).one().instagram_id == "barber_151.jp"
+
+
+@pytest.mark.parametrize("instagram_id", ["barber 151", "barber-151", "バーバー", "a" * 31])
+def test_instagram_id_invalid(client: TestClient, db: Session, instagram_id: str):
+    # 英数字・ピリオド・アンダースコアの30文字以内でないと登録できない
+    response = reserve(client, "2026-10-12T01:00:00.000Z", instagram_id=instagram_id)
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Instagram IDは英数字・ピリオド・アンダースコアの30文字以内で入力してください。"}
     assert db.query(Reservation).count() == 0
 
 
@@ -117,6 +154,15 @@ def test_get_reservation_slots(client: TestClient):
     }
 
 
+def test_get_admin_reservations_instagram_id(admin_client: TestClient):
+    # 管理用は、InstagramのIDも返す
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", instagram_id="barber151")
+
+    response = admin_client.get("/admin/reservations")
+
+    assert response.json()["reservations"][0]["instagram_id"] == "barber151"
+
+
 def test_get_admin_reservations(admin_client: TestClient):
     # 管理用は、メニュー名とお客様の名前もつけて返す
     reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="フルコース")
@@ -131,6 +177,7 @@ def test_get_admin_reservations(admin_client: TestClient):
                 "end_datetime": "2026-10-12T02:00:00Z",
                 "menu_name": "フルコース",
                 "customer_name": "山田",
+                "instagram_id": None,
             }
         ]
     }
@@ -185,3 +232,22 @@ def test_seed_demo_reservations(db: Session):
 
     reservation_service.seed_demo_reservations(db)
     assert db.query(Reservation).count() == len(reservations)
+
+
+@pytest.mark.parametrize("phone_number", ["09012345678", "090-1234-5678", "090 1234 5678", "０９０－１２３４－５６７８"])
+def test_phone_number_normalized(client: TestClient, db: Session, phone_number: str):
+    # ハイフン・空白・全角数字は取り除いたり半角にしたりして、数字11桁で保存する
+    response = reserve(client, "2026-10-12T01:00:00.000Z", phone_number=phone_number)
+
+    assert response.status_code == 200
+    assert db.query(Reservation).one().phone_number == "09012345678"
+
+
+@pytest.mark.parametrize("phone_number", ["0901234567", "090123456789", "090-1234-567", "090abcd5678", "---"])
+def test_phone_number_invalid(client: TestClient, db: Session, phone_number: str):
+    # 電話番号が数字11桁でないと登録できない
+    response = reserve(client, "2026-10-12T01:00:00.000Z", phone_number=phone_number)
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "電話番号は数字11桁で入力してください。"}
+    assert db.query(Reservation).count() == 0

@@ -652,3 +652,20 @@ tbody tr:nth-child(odd) td:not(.holiday):not(.booked-cell) {
   cursor: not-allowed;
   box-shadow: none;
 }
+
+/* 入力の形式が正しくない時のメッセージ。入力したあと、正しくない時だけ表示する */
+.field-error {
+  display: none;
+  font-size: 0.8rem;
+  color: #991b1b;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+input:user-invalid {
+  border-color: #dc2626;
+}
+
+input:user-invalid ~ .field-error {
+  display: block;
+}
