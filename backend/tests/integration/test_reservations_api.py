@@ -60,6 +60,24 @@ def test_contact_required(client: TestClient, db: Session):
     assert db.query(Reservation).count() == 0
 
 
+def test_contact_blank_only(client: TestClient, db: Session):
+    # 空白だけのInstagramのIDや電話番号は、入力なしとして扱う
+    response = reserve(client, "2026-10-12T01:00:00.000Z", instagram_id="  ", phone_number="　")
+
+    assert response.status_code == 400
+    assert db.query(Reservation).count() == 0
+
+
+def test_contact_instagram_only(client: TestClient, db: Session):
+    # InstagramのIDだけでも登録できる。前後の空白は取り除く
+    response = reserve(client, "2026-10-12T01:00:00.000Z", instagram_id=" barber151 ")
+
+    assert response.status_code == 200
+    reservation = db.query(Reservation).one()
+    assert reservation.instagram_id == "barber151"
+    assert reservation.phone_number is None
+
+
 def test_invalid_menu(client: TestClient, db: Session):
     # ないメニューでは登録できない
     body = {"name": "山田", "phone_number": "09000000000", "menu_id": 999, "reservation_date": "2026-10-12T01:00:00.000Z"}
