@@ -9,7 +9,7 @@ from src import config
 from src.database import Base
 from src.dependencies import get_db
 from src.main import app
-from src.services import menu_service
+from src.services import menu_service, reservation_service
 from tests.dependencies import TestSessionLocal, get_test_db, test_engine
 
 
@@ -21,6 +21,12 @@ ADMIN_TOKEN = "test-admin-token"
 def admin_token(monkeypatch: pytest.MonkeyPatch) -> None:
     """各テストで、管理用のトークンをADMIN_TOKENにする"""
     monkeypatch.setattr(config, "ADMIN_TOKEN", ADMIN_TOKEN)
+
+
+@pytest.fixture(autouse=True)
+def reset_demo(monkeypatch: pytest.MonkeyPatch) -> None:
+    """各テストで、デモの予約を消す仕組みを止めておく(seed_demo_reservationsを呼んだテストだけ動く)"""
+    monkeypatch.setattr(reservation_service, "demo_seeded_at", None)
 
 
 @pytest.fixture(autouse=True)

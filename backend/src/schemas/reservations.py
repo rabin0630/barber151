@@ -43,6 +43,35 @@ class CreateReservationResponse(BaseModel):
     message: str
 
 
+class ChangeReservationMenuRequest(BaseModel):
+    """PATCH /admin/reservations/{reservation_id}のリクエスト
+
+    Attributes:
+        menu_id (int): 新しいメニューID
+    """
+    menu_id: int
+
+
+class ChangeReservationContactsRequest(BaseModel):
+    """PATCH /admin/reservations/{reservation_id}/contactsのリクエスト。2つとも今の値を送る
+
+    Attributes:
+        instagram_id (str | None): 新しいInstagramのID。空なら消す
+        phone_number (str | None): 新しい電話番号。空なら消す
+    """
+    instagram_id: str | None = None
+    phone_number: str | None = None
+
+
+class ChangeReservationNameRequest(BaseModel):
+    """PATCH /admin/reservations/{reservation_id}/nameのリクエスト
+
+    Attributes:
+        customer_name (str): 新しいお客様の名前
+    """
+    customer_name: str
+
+
 class ReservationSlot(UtcDatetimeModel):
     """GET /reservationsの1件分。だれでも見られるので、お客様の情報は入れない
 
@@ -67,17 +96,23 @@ class ReservationItem(UtcDatetimeModel):
     """GET /admin/reservationsの1件分
 
     Attributes:
+        id (int): 予約ID。取り消しなどで予約を指定するのに使う
         start_datetime (datetime): 開始日時(UTC)
         end_datetime (datetime): 終了日時(UTC)
+        menu_id (int): メニューID。メニューを変える時に、今のメニューを選んでおくのに使う
         menu_name (str): メニュー名
         customer_name (str): お客様の名前
         instagram_id (str | None): InstagramのID。管理画面でプロフィールへのリンクにする
+        phone_number (str | None): 電話番号(数字11桁)。管理画面で電話をかけるリンクにする
     """
+    id: int
     start_datetime: datetime
     end_datetime: datetime
+    menu_id: int
     menu_name: str
     customer_name: str
     instagram_id: str | None
+    phone_number: str | None
 
 
 class ReservationsResponse(BaseModel):

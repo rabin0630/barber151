@@ -5,6 +5,7 @@ import { MENU_CATEGORIES } from './menuCategories.ts';
 const managerEl = document.getElementById('menu-manager') as HTMLDivElement;
 const statusEl = document.getElementById('menu-status-message') as HTMLDivElement;
 const reservationMenuSelect = document.getElementById('admin-menu-select') as HTMLSelectElement;
+const contactMenuSelect = document.getElementById('contact-menu-select') as HTMLSelectElement;
 
 /** 所要時間の選択肢の上限（営業時間 8:00〜20:00 に収まる時間） */
 const MAX_DURATION: number = 12;
@@ -140,10 +141,10 @@ function renderMenuManager(menus: MenuInfo[]): void {
   });
 }
 
-// 電話予約モーダルのメニュー選択肢を、大きい項目ごとにまとめて作り直す
-function renderReservationMenuSelect(menus: MenuInfo[]): void {
-  reservationMenuSelect.innerHTML = '';
-  reservationMenuSelect.appendChild(new Option('選択してください', ''));
+// メニューの選択肢を、大きい項目ごとにまとめて作り直す。placeholderを渡すと先頭に未選択の選択肢を置く
+function renderMenuSelect(select: HTMLSelectElement, menus: MenuInfo[], placeholder?: string): void {
+  select.innerHTML = '';
+  if (placeholder) select.appendChild(new Option(placeholder, ''));
 
   MENU_CATEGORIES.forEach((category: MenuCategory) => {
     const categoryMenus: MenuInfo[] = menus.filter((menu: MenuInfo) => menu.category === category.id);
@@ -154,16 +155,17 @@ function renderReservationMenuSelect(menus: MenuInfo[]): void {
     categoryMenus.forEach((menu: MenuInfo) => {
       group.appendChild(new Option(`${menu.name} (${menu.price.toLocaleString()}円 / ${menu.duration}時間)`, String(menu.id)));
     });
-    reservationMenuSelect.appendChild(group);
+    select.appendChild(group);
   });
 }
 
-/** サーバーからメニューを取得し、メニュー管理欄と電話予約のメニュー選択肢を描画する */
+/** サーバーからメニューを取得し、メニュー管理欄と、電話予約・連絡先モーダルのメニュー選択肢を描画する */
 export async function loadMenuManager(): Promise<void> {
   try {
     const menus: MenuInfo[] = await fetchMenus();
     renderMenuManager(menus);
-    renderReservationMenuSelect(menus);
+    renderMenuSelect(reservationMenuSelect, menus, '選択してください');
+    renderMenuSelect(contactMenuSelect, menus);
   } catch (e: unknown) {
     console.error('メニューの取得に失敗しました', e);
     showStatus('メニューの取得に失敗しました。', true);

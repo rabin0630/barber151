@@ -18,7 +18,7 @@ from src.services import menu_service, reservation_service
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """APIの起動時に、テーブルがなければ作り、メニューがなければ初期データを入れる
 
-    DEMO_DATAがtrueなら、予約がない時にダミーの予約も入れる。
+    DEMO_DATAがtrueなら、予約をすべて消してダミーの予約を入れ直す(ポートフォリオのデモ用)。
 
     Args:
         app (FastAPI): FastAPIのアプリ

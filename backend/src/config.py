@@ -15,5 +15,5 @@ CORS_ORIGINS: list[str] = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").spl
 ## 管理用APIのトークン。空なら管理用APIはすべて拒否する
 ADMIN_TOKEN: str = os.getenv("ADMIN_TOKEN", "")
 
-## trueなら、予約が1件もない時にダミーの予約を入れる(デモ公開用)
+## trueなら、起動のたびに予約をすべて消してダミーの予約を入れ直し、その後の予約は5分で消す(デモ公開用)
 DEMO_DATA: bool = os.getenv("DEMO_DATA", "false").lower() == "true"

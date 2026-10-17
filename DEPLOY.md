@@ -59,10 +59,15 @@ docker compose -f docker-compose.prod.yml up -d
 
 ## デモ用のダミーデータ
 
-`DEMO_DATA=true` のとき、予約が1件もなければ、明日から2週間分のダミーの予約(定休日の月・火を除く)を起動時に入れる。入れ直したいときは DB を消す。
+ポートフォリオで予約画面も管理画面も触ってもらうための仕組み。`DEMO_DATA=true` のときだけ動く。
+
+- 起動するたびに予約をすべて消し、明日から2週間分のダミーの予約(定休日の月・火を除く)を入れ直す。お客様は著名人の名前と Instagram の ID
+- 起動した後に作られた予約は、予約画面・管理画面のどちらから作ったものも、5分たつと消える(予約一覧などを開いた時に消す)
+
+予約がすべて消えるので、お店で実際に使う時は `DEMO_DATA=false` にする。
+
+ダミーの予約を入れ直したいときは、バックエンドを再起動する。
 
 ```sh
-docker compose -f docker-compose.prod.yml down
-docker volume rm <プロジェクト名>_db-data   # docker volume ls で確認
-docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml restart backend
 ```
