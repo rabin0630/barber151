@@ -99,7 +99,8 @@
     </nav>
   </header>
 
-  <main class="main-body">
+  <!-- 管理画面の中身。トークンの認証が終わるまで表示しない -->
+  <main id="admin-main" class="main-body" style="display: none;">
     <div class="reservation-container" style="max-width: 900px;">
       <h2>予約一覧（管理者用）</h2>
       <div class="reservation-wrapper">
@@ -186,7 +187,7 @@
     </div>
   </div>
 
-  <footer class="site-footer">
+  <footer id="admin-footer" class="site-footer" style="display: none;">
     <p>&copy; 2024 barber151</p>
   </footer>
 

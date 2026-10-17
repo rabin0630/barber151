@@ -117,9 +117,14 @@ const loginTokenInput = document.getElementById('admin-login-token') as HTMLInpu
 const loginMessage = document.getElementById('admin-login-message') as HTMLDivElement;
 const loginSubmitBtn = document.getElementById('admin-login-submit-btn') as HTMLButtonElement;
 
-// モーダルを閉じて、予約と履歴を読み込む
+const adminMain = document.getElementById('admin-main') as HTMLElement;
+const adminFooter = document.getElementById('admin-footer') as HTMLElement;
+
+// モーダルを閉じて管理画面の中身を表示し、予約と履歴を読み込む
 function enterAdmin(): void {
   loginModal.style.display = 'none';
+  adminMain.style.display = '';
+  adminFooter.style.display = '';
   loadAndRenderSchedule();
 }
 
