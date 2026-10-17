@@ -190,6 +190,29 @@
     <p>&copy; 2024 barber151</p>
   </footer>
 
+  <!-- 管理画面に入る時のトークン入力モーダル。ページを開いたら最初に表示する -->
+  <div id="admin-login-modal" class="modal-overlay">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="admin-login-title">
+      <h2 id="admin-login-title" style="text-align: center; margin-top: 0;">管理画面</h2>
+      <p style="text-align: center; font-size: 0.9rem; color: #6b7280; margin-bottom: 1.5rem;">管理用のトークンを入力してください</p>
+
+      <div id="admin-login-message" class="status-message" role="alert" style="display: none;"></div>
+
+      <form id="admin-login-form">
+        <div class="form-group">
+          <label for="admin-login-token">トークン</label>
+          <input type="password" id="admin-login-token" required autocomplete="current-password"
+            style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 16px; min-height: 48px; box-sizing: border-box;">
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+          <a href="booking.html" class="nav-btn" style="flex: 1; display: flex; align-items: center; justify-content: center;">戻る</a>
+          <button type="submit" id="admin-login-submit-btn" class="submit-btn" style="flex: 1; margin: 0;">入る</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script type="module" src="/src/admin.ts"></script>
 </body>
 </html>

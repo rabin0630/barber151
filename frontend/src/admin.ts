@@ -110,7 +110,16 @@ window.addEventListener('resize', () => {
   }
 });
 
-loadAndRenderSchedule();
+// 管理画面に入る時のトークン入力モーダル。予約や履歴は、トークンを入力してから読み込む
+const loginForm = document.getElementById('admin-login-form') as HTMLFormElement;
+const loginTokenInput = document.getElementById('admin-login-token') as HTMLInputElement;
+loginTokenInput.focus();
+
+loginForm.addEventListener('submit', (e: SubmitEvent) => {
+  e.preventDefault();
+  // TODO: 入力したトークンを保存して、モーダルを閉じてから予約と履歴を読み込む
+});
+
 loadMenuManager();
 
 nextBtns.forEach((btn: HTMLButtonElement) => {
