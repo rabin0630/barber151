@@ -160,6 +160,7 @@ loginForm.addEventListener('submit', async (e: SubmitEvent) => {
 });
 
 // このタブで一度入っていれば、保存したトークンを確かめて、モーダルを出さずに入る
+// 確かめている間はモーダルも出さない(一瞬モーダルが見えてしまうのを防ぐ)
 async function restoreLogin(): Promise<void> {
   const savedToken: string = getAdminToken();
   if (savedToken) {
@@ -172,6 +173,7 @@ async function restoreLogin(): Promise<void> {
       // 確かめられない時は、モーダルで入力し直してもらう
     }
   }
+  loginModal.style.display = 'flex';
   loginTokenInput.focus();
 }
 
