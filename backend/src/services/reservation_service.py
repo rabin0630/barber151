@@ -105,6 +105,34 @@ def normalize_instagram_id(instagram_id: str | None) -> str | None:
     return instagram_id
 
 
+def normalize_contacts(instagram_id: str | None, phone_number: str | None) -> tuple[str | None, str | None]:
+    """InstagramのIDと電話番号を保存する形に整え、どちらかがあるか確かめる
+
+    電話番号は090-1234-5678や全角数字も受け付け、数字だけにする。空白だけの入力は入力なしとして扱う。
+
+    Args:
+        instagram_id (str | None): 入力されたInstagramのID
+        phone_number (str | None): 入力された電話番号
+
+    Returns:
+        tuple[str | None, str | None]: 整えた後の(InstagramのID, 電話番号)
+
+    Raises:
+        AppError: 次のどれかの時(400)
+            - InstagramのIDも電話番号もない
+            - InstagramのIDか電話番号の形式が正しくない
+    """
+    instagram_id = normalize_instagram_id(instagram_id)
+    phone_number = (phone_number or "").strip() or None
+    if not instagram_id and not phone_number:
+        raise AppError(400, "Instagram ID または 電話番号のどちらかを入力してください。")
+    if phone_number:
+        phone_number = PHONE_NUMBER_SEPARATORS.sub("", phone_number.translate(FULLWIDTH_DIGITS))
+        if not PHONE_NUMBER_PATTERN.fullmatch(phone_number):
+            raise AppError(400, "電話番号は数字11桁で入力してください。")
+    return instagram_id, phone_number
+
+
 def create_reservation(
     db: Session,
     customer_name: str,
@@ -135,16 +163,7 @@ def create_reservation(
             - メニューIDがない、または削除済み
             - 他の予約と時間が重なる
     """
-    # 空白だけの入力は、入力なしとして扱う
-    instagram_id = normalize_instagram_id(instagram_id)
-    phone_number = (phone_number or "").strip() or None
-    if not instagram_id and not phone_number:
-        raise AppError(400, "Instagram ID または 電話番号のどちらかを入力してください。")
-    if phone_number:
-        # 090-1234-5678や全角数字も受け付け、数字だけにして保存する
-        phone_number = PHONE_NUMBER_SEPARATORS.sub("", phone_number.translate(FULLWIDTH_DIGITS))
-        if not PHONE_NUMBER_PATTERN.fullmatch(phone_number):
-            raise AppError(400, "電話番号は数字11桁で入力してください。")
+    instagram_id, phone_number = normalize_contacts(instagram_id, phone_number)
 
     menu = menus_crud.get_menu_by_id(db, menu_id)
     if menu is None or not menu.is_active:
@@ -216,6 +235,34 @@ def change_reservation_menu(db: Session, reservation_id: int, menu_id: int) -> R
 
     reservation.menu_id = menu.id
     reservation.end_datetime = end
+    db.commit()
+    db.refresh(reservation)
+    return reservation
+
+
+def change_reservation_contacts(
+    db: Session, reservation_id: int, instagram_id: str | None, phone_number: str | None
+) -> Reservation:
+    """予約のInstagramのIDと電話番号を書き換え、コミットする
+
+    予約した時と同じルールで確かめる。どちらかは残っていないといけない。
+
+    Args:
+        db (Session): DBのセッション
+        reservation_id (int): 予約ID
+        instagram_id (str | None): 新しいInstagramのID。空なら消す
+        phone_number (str | None): 新しい電話番号。空なら消す
+
+    Returns:
+        Reservation: 変更した予約
+
+    Raises:
+        AppError: 変更できない時。次のどれか
+            - 予約がない、またはすでに取り消し済み(404)
+            - InstagramのIDも電話番号もなくなる、または形式が正しくない(400)
+    """
+    reservation = get_confirmed_reservation(db, reservation_id)
+    reservation.instagram_id, reservation.phone_number = normalize_contacts(instagram_id, phone_number)
     db.commit()
     db.refresh(reservation)
     return reservation

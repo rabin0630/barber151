@@ -87,6 +87,20 @@ export async function changeReservationMenu(id: number, menuId: number): Promise
   return res.json();
 }
 
+// 予約の連絡先（InstagramのIDと電話番号）を書き換える。2つとも今の値を送る（管理画面用）
+export async function changeReservationContacts(
+  id: number,
+  contacts: { instagram_id: string | null; phone_number: string | null },
+): Promise<ReservationItem> {
+  const res: Response = await fetch(`${API_BASE_URL}/admin/reservations/${id}/contacts`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...adminHeaders() },
+    body: JSON.stringify(contacts),
+  });
+  if (!res.ok) await throwApiError(res, '連絡先の保存に失敗しました。');
+  return res.json();
+}
+
 // 予約を取り消す（論理削除。管理画面用）
 export async function cancelReservation(id: number): Promise<void> {
   const res: Response = await fetch(`${API_BASE_URL}/admin/reservations/${id}`, { method: 'DELETE', headers: adminHeaders() });

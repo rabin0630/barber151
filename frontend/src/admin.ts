@@ -1,6 +1,6 @@
 import { loadMenuManager } from './modules/adminMenu.ts';
 import { setupPhoneNumberInput } from './modules/phoneNumber.ts';
-import { cancelReservation, changeReservationMenu, createReservation, fetchAdminReservations, fetchHistory } from './services/apiClient.ts';
+import { cancelReservation, changeReservationContacts, changeReservationMenu, createReservation, fetchAdminReservations, fetchHistory } from './services/apiClient.ts';
 import type { AdminReservation, HistoryItem, ReservationItem } from './types/index.ts';
 
 const headerRow = document.getElementById('schedule-header') as HTMLTableRowElement;
@@ -348,12 +348,32 @@ const contactPhone = document.getElementById('contact-phone') as HTMLElement;
 const contactInstagram = document.getElementById('contact-instagram') as HTMLElement;
 const contactCloseBtn = document.getElementById('contact-close-btn') as HTMLButtonElement;
 
-// 連絡先がない時の「未登録」の表示
-function createEmptyContact(): HTMLSpanElement {
-  const span: HTMLSpanElement = document.createElement('span');
-  span.className = 'contact-empty';
-  span.textContent = '未登録';
-  return span;
+// 電話番号を090-1234-5678の形にする。11桁でなければそのまま
+function formatPhoneNumber(phoneNumber: string): string {
+  return phoneNumber.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
+}
+
+// 連絡先の値のボタン。押すと編集モーダルを開く。値がなければ「未登録」と出す
+function createContactValueButton(text: string | null, kind: ContactKind): HTMLButtonElement {
+  const button: HTMLButtonElement = document.createElement('button');
+  button.type = 'button';
+  button.className = 'contact-value-btn';
+  if (text) {
+    button.textContent = text;
+  } else {
+    const empty: HTMLSpanElement = document.createElement('span');
+    empty.className = 'contact-empty';
+    empty.textContent = '未登録（追加する）';
+    button.append(empty);
+  }
+  button.addEventListener('click', () => openContactEdit(kind));
+  return button;
+}
+
+// 連絡先モーダルの電話番号・Instagramの欄を描く
+function renderContactValues(res: AdminReservation): void {
+  contactPhone.replaceChildren(createContactValueButton(res.phoneNumber && formatPhoneNumber(res.phoneNumber), 'phone'));
+  contactInstagram.replaceChildren(createContactValueButton(res.instagramId && `@${res.instagramId.replace(/^@/, '')}`, 'instagram'));
 }
 
 // 連絡先モーダルで開いている予約。取り消しの時に使う
@@ -371,28 +391,7 @@ function openContactModal(res: AdminReservation): void {
   contactDatetime.textContent = formatReservationTime(res);
   selectContactMenu(res);
 
-  // 電話番号は押すと電話をかけられるようにする。表示は090-1234-5678の形にする
-  if (res.phoneNumber) {
-    const phoneLink: HTMLAnchorElement = document.createElement('a');
-    phoneLink.href = `tel:${res.phoneNumber}`;
-    phoneLink.textContent = res.phoneNumber.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
-    contactPhone.replaceChildren(phoneLink);
-  } else {
-    contactPhone.replaceChildren(createEmptyContact());
-  }
-
-  // Instagramは押すとプロフィールを新しいタブで開く
-  if (res.instagramId) {
-    const instagramId: string = res.instagramId.replace(/^@/, '');
-    const instagramLink: HTMLAnchorElement = document.createElement('a');
-    instagramLink.href = `https://www.instagram.com/${encodeURIComponent(instagramId)}/`;
-    instagramLink.target = '_blank';
-    instagramLink.rel = 'noopener noreferrer';
-    instagramLink.textContent = `@${instagramId}`;
-    contactInstagram.replaceChildren(instagramLink);
-  } else {
-    contactInstagram.replaceChildren(createEmptyContact());
-  }
+  renderContactValues(res);
 
   contactModal.style.display = 'flex';
   contactCloseBtn.focus();
@@ -435,6 +434,130 @@ contactMenuSelect.addEventListener('change', async () => {
   } finally {
     contactMenuSelect.disabled = false;
   }
+});
+
+// 電話番号・Instagramの編集モーダル
+// 開いた時の値をsavedContactValueに置き、1文字打つたびに入力欄と比べて、違えば保存ボタンを出す
+type ContactKind = 'phone' | 'instagram';
+
+const contactEditModal = document.getElementById('contact-edit-modal') as HTMLDivElement;
+const contactEditTitle = document.getElementById('contact-edit-title') as HTMLHeadingElement;
+const contactEditBackBtn = document.getElementById('contact-edit-back-btn') as HTMLButtonElement;
+const contactEditMessage = document.getElementById('contact-edit-message') as HTMLDivElement;
+const contactEditAction = document.getElementById('contact-edit-action') as HTMLAnchorElement;
+const contactEditFields: Record<ContactKind, HTMLDivElement> = {
+  phone: document.getElementById('contact-edit-phone-field') as HTMLDivElement,
+  instagram: document.getElementById('contact-edit-instagram-field') as HTMLDivElement,
+};
+const contactEditInputs: Record<ContactKind, HTMLInputElement> = {
+  phone: document.getElementById('contact-edit-phone') as HTMLInputElement,
+  instagram: document.getElementById('contact-edit-instagram') as HTMLInputElement,
+};
+setupPhoneNumberInput(contactEditInputs.phone);
+
+let contactEditKind: ContactKind = 'phone';
+// 編集モーダルを開いた時(保存した後)の値。入力欄と比べて、保存ボタンを出すか決める
+let savedContactValue: string = '';
+
+// 保存してある値を、入力欄に出す形にする
+function contactInputValue(res: AdminReservation, kind: ContactKind): string {
+  if (kind === 'phone') return res.phoneNumber ? formatPhoneNumber(res.phoneNumber) : '';
+  return res.instagramId ? res.instagramId.replace(/^@/, '') : '';
+}
+
+// 比べるために値をそろえる。電話番号は数字だけ(全角は半角に)、InstagramはIDだけにする
+// 例: "090-1234-5678" と "09012345678" は同じ、"@barber" と "barber" は同じとみなす
+function normalizeContactValue(kind: ContactKind, value: string): string {
+  if (kind === 'phone') {
+    return value.replace(/[０-９]/g, (c: string): string => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/\D/g, '');
+  }
+  return value.trim().replace(/^@/, '');
+}
+
+function saveButtonOf(kind: ContactKind): HTMLButtonElement {
+  return contactEditFields[kind].querySelector('.contact-edit-save-btn') as HTMLButtonElement;
+}
+
+// 「電話する」「Instagramを開く」のリンクを、保存してある値で作る
+function renderContactEditAction(res: AdminReservation): void {
+  if (contactEditKind === 'phone') {
+    contactEditAction.textContent = '📞 電話する';
+    contactEditAction.removeAttribute('target');
+    contactEditAction.removeAttribute('rel');
+    contactEditAction.href = res.phoneNumber ? `tel:${res.phoneNumber}` : '#';
+    contactEditAction.setAttribute('aria-disabled', String(!res.phoneNumber));
+  } else {
+    const instagramId: string = (res.instagramId ?? '').replace(/^@/, '');
+    contactEditAction.textContent = 'Instagramを開く';
+    contactEditAction.target = '_blank';
+    contactEditAction.rel = 'noopener noreferrer';
+    contactEditAction.href = instagramId ? `https://www.instagram.com/${encodeURIComponent(instagramId)}/` : '#';
+    contactEditAction.setAttribute('aria-disabled', String(!instagramId));
+  }
+}
+
+function openContactEdit(kind: ContactKind): void {
+  if (!contactReservation) return;
+  contactEditKind = kind;
+  contactEditTitle.textContent = kind === 'phone' ? '電話番号' : 'Instagram';
+  contactEditFields.phone.style.display = kind === 'phone' ? '' : 'none';
+  contactEditFields.instagram.style.display = kind === 'instagram' ? '' : 'none';
+
+  savedContactValue = contactInputValue(contactReservation, kind);
+  contactEditInputs[kind].value = savedContactValue;
+  saveButtonOf(kind).style.display = 'none';
+  contactEditMessage.style.display = 'none';
+  renderContactEditAction(contactReservation);
+
+  contactEditModal.style.display = 'flex';
+  contactEditInputs[kind].focus();
+}
+
+// 戻る(✕): 保存していない入力は捨てて、連絡先モーダルに戻る
+function closeContactEdit(): void {
+  contactEditModal.style.display = 'none';
+}
+contactEditBackBtn.addEventListener('click', closeContactEdit);
+
+(Object.keys(contactEditInputs) as ContactKind[]).forEach((kind: ContactKind) => {
+  const input: HTMLInputElement = contactEditInputs[kind];
+  const saveBtn: HTMLButtonElement = saveButtonOf(kind);
+
+  // 1文字打つたびに、開いた時の値と比べる。違う時だけ保存ボタンを出す
+  input.addEventListener('input', () => {
+    const changed: boolean = normalizeContactValue(kind, input.value) !== normalizeContactValue(kind, savedContactValue);
+    saveBtn.style.display = changed ? '' : 'none';
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    if (!contactReservation) return;
+    const reservation: AdminReservation = contactReservation;
+    saveBtn.textContent = '保存中...';
+    saveBtn.disabled = true;
+    contactEditMessage.style.display = 'none';
+    try {
+      // もう片方の連絡先は今の値のまま送る
+      const updated: AdminReservation = toAdminReservation(await changeReservationContacts(reservation.id, {
+        phone_number: kind === 'phone' ? input.value : reservation.phoneNumber,
+        instagram_id: kind === 'instagram' ? input.value : reservation.instagramId,
+      }));
+      contactReservation = updated;
+      savedContactValue = contactInputValue(updated, kind);
+      input.value = savedContactValue;
+      saveBtn.style.display = 'none';
+      renderContactValues(updated);
+      renderContactEditAction(updated);
+      loadAndRenderSchedule(); // カードのInstagramのIDを新しくする
+    } catch (error: unknown) {
+      contactEditMessage.textContent = error instanceof Error ? error.message : '連絡先の保存に失敗しました。';
+      contactEditMessage.style.display = 'block';
+      contactEditMessage.style.backgroundColor = '#fee2e2';
+      contactEditMessage.style.color = '#991b1b';
+    } finally {
+      saveBtn.textContent = '保存';
+      saveBtn.disabled = false;
+    }
+  });
 });
 
 function closeChangeMenuError(): void {
@@ -525,6 +648,7 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
   if (e.key !== 'Escape') return;
   if (cancelDoneModal.style.display !== 'none') closeCancelDone();
   else if (changeMenuErrorModal.style.display !== 'none') closeChangeMenuError();
+  else if (contactEditModal.style.display !== 'none') closeContactEdit();
   else if (cancelConfirmModal.style.display !== 'none') closeCancelConfirm();
   else if (contactModal.style.display !== 'none') closeContactModal();
 });

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from src.dependencies import get_db, require_admin
 from src.models import Reservation
 from src.schemas.reservations import (
+    ChangeReservationContactsRequest,
     ChangeReservationMenuRequest,
     CreateReservationRequest,
     CreateReservationResponse,
@@ -98,6 +99,33 @@ def change_reservation_menu(
         AppError: 変更できない時(reservation_service.change_reservation_menuと同じ)
     """
     reservation = reservation_service.change_reservation_menu(db, reservation_id, request.menu_id)
+    return to_reservation_item(reservation)
+
+
+@router.patch(
+    "/admin/reservations/{reservation_id}/contacts",
+    response_model=ReservationItem,
+    dependencies=[Depends(require_admin)],
+)
+def change_reservation_contacts(
+    reservation_id: int, request: ChangeReservationContactsRequest, db: Session = Depends(get_db)
+) -> ReservationItem:
+    """PATCH /admin/reservations/{reservation_id}/contacts: 予約の連絡先を書き換える(管理用)
+
+    Args:
+        reservation_id (int): 予約ID
+        request (ChangeReservationContactsRequest): 新しいInstagramのIDと電話番号
+        db (Session): DBのセッション
+
+    Returns:
+        ReservationItem: 変更した予約
+
+    Raises:
+        AppError: 変更できない時(reservation_service.change_reservation_contactsと同じ)
+    """
+    reservation = reservation_service.change_reservation_contacts(
+        db, reservation_id, request.instagram_id, request.phone_number
+    )
     return to_reservation_item(reservation)
 
 

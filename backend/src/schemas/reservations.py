@@ -52,6 +52,17 @@ class ChangeReservationMenuRequest(BaseModel):
     menu_id: int
 
 
+class ChangeReservationContactsRequest(BaseModel):
+    """PATCH /admin/reservations/{reservation_id}/contactsのリクエスト。2つとも今の値を送る
+
+    Attributes:
+        instagram_id (str | None): 新しいInstagramのID。空なら消す
+        phone_number (str | None): 新しい電話番号。空なら消す
+    """
+    instagram_id: str | None = None
+    phone_number: str | None = None
+
+
 class ReservationSlot(UtcDatetimeModel):
     """GET /reservationsの1件分。だれでも見られるので、お客様の情報は入れない
 

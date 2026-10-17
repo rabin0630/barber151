@@ -283,6 +283,65 @@ def test_change_reservation_menu_requires_token(client: TestClient):
     assert client.patch("/admin/reservations/1", json={"menu_id": 1}).status_code == 401
 
 
+def test_change_reservation_contacts(admin_client: TestClient, db: Session):
+    # 連絡先は予約した時と同じ形に整えて保存する
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", phone_number="09000000000")
+
+    response = admin_client.patch(
+        "/admin/reservations/1/contacts", json={"instagram_id": "@new_id", "phone_number": "080-1111-2222"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["instagram_id"] == "new_id"
+    assert response.json()["phone_number"] == "08011112222"
+    reservation = db.get(Reservation, 1)
+    assert (reservation.instagram_id, reservation.phone_number) == ("new_id", "08011112222")
+
+
+def test_change_reservation_contacts_clear_one(admin_client: TestClient, db: Session):
+    # どちらかが残っていれば、もう片方は消せる
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", instagram_id="barber", phone_number="09000000000")
+
+    response = admin_client.patch(
+        "/admin/reservations/1/contacts", json={"instagram_id": "barber", "phone_number": ""}
+    )
+
+    assert response.status_code == 200
+    assert db.get(Reservation, 1).phone_number is None
+
+
+@pytest.mark.parametrize(
+    "contacts, detail",
+    [
+        ({"instagram_id": "", "phone_number": " "}, "Instagram ID または 電話番号のどちらかを入力してください。"),
+        ({"instagram_id": None, "phone_number": "090-1234-567"}, "電話番号は数字11桁で入力してください。"),
+        (
+            {"instagram_id": "バーバー", "phone_number": "09000000000"},
+            "Instagram IDは英数字・ピリオド・アンダースコアの30文字以内で入力してください。",
+        ),
+    ],
+)
+def test_change_reservation_contacts_invalid(admin_client: TestClient, db: Session, contacts, detail):
+    # 予約した時と同じルールに合わない時は変えない
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", phone_number="09000000000")
+
+    response = admin_client.patch("/admin/reservations/1/contacts", json=contacts)
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": detail}
+    assert db.get(Reservation, 1).phone_number == "09000000000"
+
+
+def test_change_reservation_contacts_errors(client: TestClient, admin_client: TestClient):
+    # ない予約は404、トークンがないと401
+    reserve(client, "2026-10-12T01:00:00.000Z")
+    body = {"phone_number": "09000000000"}
+
+    assert admin_client.patch("/admin/reservations/999/contacts", json=body).status_code == 404
+    client.headers.pop("Authorization")
+    assert client.patch("/admin/reservations/1/contacts", json=body).status_code == 401
+
+
 def test_get_history(admin_client: TestClient):
     # 新しく作られた順に、最大10件返す
     for hour in range(11):
