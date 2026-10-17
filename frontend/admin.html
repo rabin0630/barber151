@@ -126,6 +126,37 @@
       color: #9ca3af;
       font-weight: normal;
     }
+    /* 予約の取り消し・ドタキャンのボタン。横に2つ並べる */
+    .contact-actions {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .contact-actions button {
+      flex: 1;
+      min-height: 44px;
+      padding: 0.5rem;
+      background: #ffffff;
+      border: 1px solid;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .contact-cancel-btn {
+      border-color: #fca5a5;
+      color: #dc2626;
+    }
+    .contact-cancel-btn:hover {
+      background: #fef2f2;
+    }
+    .contact-no-show-btn {
+      border-color: #fcd34d;
+      color: #b45309;
+    }
+    .contact-no-show-btn:hover {
+      background: #fffbeb;
+    }
   </style>
 </head>
 <body>
@@ -205,6 +236,11 @@
           <dd id="contact-instagram"></dd>
         </div>
       </dl>
+
+      <div class="contact-actions">
+        <button type="button" id="contact-cancel-btn" class="contact-cancel-btn">予約を取り消す</button>
+        <button type="button" id="contact-no-show-btn" class="contact-no-show-btn">ドタキャンされた</button>
+      </div>
 
       <button type="button" id="contact-close-btn" class="nav-btn" style="width: 100%;">閉じる</button>
     </div>
