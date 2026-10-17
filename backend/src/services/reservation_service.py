@@ -1,4 +1,5 @@
 """予約のルール(連絡先の必須チェック、重複チェック)と、予約の登録・取得の処理"""
+import re
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
@@ -8,6 +9,9 @@ from src.exceptions import AppError
 from src.models import Reservation
 
 HISTORY_LIMIT = 10
+
+## 電話番号の形式。ハイフンなしの数字11桁
+PHONE_NUMBER_PATTERN = re.compile(r"[0-9]{11}")
 
 ## 日本時間。ダミーの予約を営業時間内に入れるのに使う
 JST = timezone(timedelta(hours=9))
@@ -97,6 +101,7 @@ def create_reservation(
     Raises:
         AppError: 登録できない時(400)。次のどれか
             - InstagramのIDも電話番号もない
+            - InstagramのIDか電話番号の形式が正しくない
             - メニューIDがない、または削除済み
             - 他の予約と時間が重なる
     """
@@ -105,6 +110,8 @@ def create_reservation(
     phone_number = (phone_number or "").strip() or None
     if not instagram_id and not phone_number:
         raise AppError(400, "Instagram ID または 電話番号のどちらかを入力してください。")
+    if phone_number and not PHONE_NUMBER_PATTERN.fullmatch(phone_number):
+        raise AppError(400, "電話番号は数字11桁で入力してください。")
 
     menu = menus_crud.get_menu_by_id(db, menu_id)
     if menu is None or not menu.is_active:

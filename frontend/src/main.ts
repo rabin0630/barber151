@@ -107,7 +107,8 @@ const updateNextBtnState = (): void => {
     const isNameFilled: boolean = inputs.name.value.trim() !== '';
     const isInstagramFilled: boolean = inputs.instagram.value.trim() !== '';
     const isPhoneFilled: boolean = inputs.phone.value.trim() !== '';
-    isEnabled = isNameFilled && (isInstagramFilled || isPhoneFilled);
+    // 入力欄のpatternに合わない時も進めない
+    isEnabled = isNameFilled && (isInstagramFilled || isPhoneFilled) && form.checkValidity();
   }
   footerNextBtn.disabled = !isEnabled;
 };

@@ -165,7 +165,9 @@
 
         <div class="form-group">
           <label for="admin-customer-phone">電話番号（どちらか必須）</label>
-          <input type="text" id="admin-customer-phone" placeholder="例: 090-0000-0000">
+          <input type="tel" id="admin-customer-phone" placeholder="例: 09012345678" maxlength="11" inputmode="numeric"
+            pattern="[0-9]{11}" title="電話番号は数字11桁で入力してください（ハイフンなし）">
+          <p class="field-error">電話番号は数字11桁で入力してください（ハイフンなし）</p>
         </div>
 
         <div class="form-group">

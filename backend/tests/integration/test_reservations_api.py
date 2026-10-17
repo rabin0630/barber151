@@ -1,6 +1,7 @@
 """/reservations、/admin/reservations、/historyの結合テスト"""
 from datetime import timezone
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -203,3 +204,13 @@ def test_seed_demo_reservations(db: Session):
 
     reservation_service.seed_demo_reservations(db)
     assert db.query(Reservation).count() == len(reservations)
+
+
+@pytest.mark.parametrize("phone_number", ["0901234567", "090123456789", "090-1234-5678", "０９０１２３４５６７８", "090abcd5678"])
+def test_phone_number_invalid(client: TestClient, db: Session, phone_number: str):
+    # 電話番号が数字11桁でないと登録できない
+    response = reserve(client, "2026-10-12T01:00:00.000Z", phone_number=phone_number)
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "電話番号は数字11桁で入力してください。"}
+    assert db.query(Reservation).count() == 0
