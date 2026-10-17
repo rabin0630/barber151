@@ -55,6 +55,7 @@ def get_reservations(db: Session = Depends(get_db)) -> ReservationsResponse:
                 end_datetime=r.end_datetime,
                 menu_name=r.menu.name,
                 customer_name=r.customer_name,
+                instagram_id=r.instagram_id,
             )
             for r in reservations
         ]

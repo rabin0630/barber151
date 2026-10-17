@@ -37,6 +37,7 @@ export interface Reservation {
 export interface AdminReservation extends Reservation {
   menuName: string;
   customerName: string;
+  instagramId: string | null;
 }
 
 // ==========================================
@@ -60,6 +61,7 @@ export interface ReservationItem {
   end_datetime: string;
   menu_name: string;
   customer_name: string;
+  instagram_id: string | null;
 }
 
 /** GET /admin/reservations のレスポンス */

@@ -1,4 +1,5 @@
 """予約のルール(連絡先の必須チェック、重複チェック)と、予約の登録・取得の処理"""
+import re
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
@@ -20,6 +21,9 @@ DEMO_HOURS: list[int] = [10, 15]
 
 ## ダミーの予約を入れる日数(明日から)
 DEMO_DAYS = 14
+
+## InstagramのIDの形式。英数字・ピリオド・アンダースコアで30文字以内
+INSTAGRAM_ID_PATTERN = re.compile(r"[A-Za-z0-9._]{1,30}")
 
 
 def to_utc_naive(value: datetime) -> datetime:
@@ -71,6 +75,27 @@ def list_history(db: Session) -> list[Reservation]:
     return reservations_crud.get_latest_reservations(db, HISTORY_LIMIT)
 
 
+
+def normalize_instagram_id(instagram_id: str | None) -> str | None:
+    """InstagramのIDから前後の空白と先頭の@を取り除き、形式を確かめる
+
+    Args:
+        instagram_id (str | None): 入力されたInstagramのID
+
+    Returns:
+        str | None: 取り除いた後のID。空ならNone
+
+    Raises:
+        AppError: 形式が正しくない時(400)
+    """
+    instagram_id = (instagram_id or "").strip().removeprefix("@")
+    if not instagram_id:
+        return None
+    if not INSTAGRAM_ID_PATTERN.fullmatch(instagram_id):
+        raise AppError(400, "Instagram IDは英数字・ピリオド・アンダースコアの30文字以内で入力してください。")
+    return instagram_id
+
+
 def create_reservation(
     db: Session,
     customer_name: str,
@@ -97,11 +122,12 @@ def create_reservation(
     Raises:
         AppError: 登録できない時(400)。次のどれか
             - InstagramのIDも電話番号もない
+            - InstagramのIDか電話番号の形式が正しくない
             - メニューIDがない、または削除済み
             - 他の予約と時間が重なる
     """
     # 空白だけの入力は、入力なしとして扱う
-    instagram_id = (instagram_id or "").strip() or None
+    instagram_id = normalize_instagram_id(instagram_id)
     phone_number = (phone_number or "").strip() or None
     if not instagram_id and not phone_number:
         raise AppError(400, "Instagram ID または 電話番号のどちらかを入力してください。")

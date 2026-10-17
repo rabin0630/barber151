@@ -87,8 +87,9 @@
 
           <div class="form-group">
             <label for="customer-instagram">Instagram ID（どちらか必須）</label>
-            <input type="text" id="customer-instagram" placeholder="例: @barber151" pattern="^[a-zA-Z0-9_.]+$"
-              style="ime-mode: disabled;">
+            <input type="text" id="customer-instagram" placeholder="例: @barber151" pattern="@?[A-Za-z0-9._]{1,30}"
+              maxlength="31" autocapitalize="off" style="ime-mode: disabled;">
+            <p class="field-error">英数字・ピリオド・アンダースコアの30文字以内で入力してください</p>
           </div>
 
           <div class="form-group">
