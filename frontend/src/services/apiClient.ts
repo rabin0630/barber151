@@ -20,28 +20,40 @@ const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? 'http://localh
 // 管理用のトークンを保存するsessionStorageのキー（タブを閉じると消える）
 const ADMIN_TOKEN_KEY = 'barber151-admin-token';
 
-// 保存した管理用のトークンを返す。なければ入力してもらう
-function getAdminToken(): string {
-  let token: string | null = null;
+// sessionStorageが使えない時に、このページの間だけトークンを持っておく
+let memoryAdminToken: string = '';
+
+// 保存した管理用のトークンを返す。なければ空文字
+export function getAdminToken(): string {
   try {
-    token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
+    return sessionStorage.getItem(ADMIN_TOKEN_KEY) ?? memoryAdminToken;
   } catch {
-    // sessionStorageが使えない時は、毎回入力してもらう
+    return memoryAdminToken;
   }
-  if (!token) {
-    token = window.prompt('管理用のトークンを入力してください') ?? '';
-    try {
-      sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
-    } catch {
-      // 保存できなくても、このリクエストには使える
-    }
+}
+
+// 管理用のトークンを保存する。管理画面のモーダルで、正しいと確かめた後に呼ぶ
+export function saveAdminToken(token: string): void {
+  memoryAdminToken = token;
+  try {
+    sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
+  } catch {
+    // 保存できなくても、このページの間はmemoryAdminTokenで使える
   }
-  return token;
 }
 
 // 管理用APIに付けるAuthorizationヘッダー
-function adminHeaders(): Record<string, string> {
-  return { Authorization: `Bearer ${getAdminToken()}` };
+function adminHeaders(token: string = getAdminToken()): Record<string, string> {
+  return { Authorization: `Bearer ${token}` };
+}
+
+// トークンが正しいか、管理用API(GET /history)を呼んで確かめる
+// 正しければtrue、401ならfalse。それ以外の失敗はErrorを投げる
+export async function verifyAdminToken(token: string): Promise<boolean> {
+  const res: Response = await fetch(`${API_BASE_URL}/history`, { headers: adminHeaders(token) });
+  if (res.status === 401) return false;
+  if (!res.ok) await throwApiError(res, 'トークンの確認に失敗しました。');
+  return true;
 }
 
 // 失敗したレスポンスから、APIが返したエラーメッセージ（detail）を取り出して投げる
@@ -50,6 +62,7 @@ async function throwApiError(res: Response, fallback: string): Promise<never> {
   const errorData: ApiErrorResponse | null = await res.json().catch(() => null);
   let detail: string = errorData && typeof errorData.detail === 'string' ? errorData.detail : fallback;
   if (res.status === 401) {
+    memoryAdminToken = '';
     try {
       sessionStorage.removeItem(ADMIN_TOKEN_KEY);
     } catch {

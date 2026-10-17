@@ -9,7 +9,7 @@ services:
       - ./backend:/app
     environment:
       # 管理画面で入力するトークン(開発用)
-      - ADMIN_TOKEN=dev-token
+      - ADMIN_TOKEN=test
       # 予約が1件もない時にダミーの予約を入れる
       - DEMO_DATA=true
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
