@@ -246,6 +246,29 @@
     </div>
   </div>
 
+  <!-- 「予約を取り消す」を押した時の確認モーダル。連絡先モーダルの上に重ねる -->
+  <div id="cancel-confirm-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" role="alertdialog" aria-modal="true" aria-labelledby="cancel-confirm-title" style="max-width: 400px;">
+      <h2 id="cancel-confirm-title" style="text-align: center; margin-top: 0;">本当に削除しますか？</h2>
+      <p id="cancel-confirm-detail" style="text-align: center; color: #4b5563; margin-bottom: 1.5rem;"></p>
+
+      <div id="cancel-confirm-message" class="status-message" role="alert" style="display: none;"></div>
+
+      <div class="contact-actions" style="margin-bottom: 0;">
+        <button type="button" id="cancel-confirm-no-btn" class="nav-btn">いいえ</button>
+        <button type="button" id="cancel-confirm-yes-btn" class="contact-cancel-btn">はい</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 取り消しが終わった時のモーダル。5秒たつか、閉じるを押すと消える -->
+  <div id="cancel-done-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" role="status" style="max-width: 400px; text-align: center;">
+      <h2 style="margin-top: 0;">削除しました。</h2>
+      <button type="button" id="cancel-done-close-btn" class="nav-btn" style="width: 100%;">閉じる</button>
+    </div>
+  </div>
+
   <!-- 電話予約追加用モーダル -->
   <div id="admin-reservation-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">

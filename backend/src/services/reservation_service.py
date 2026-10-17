@@ -164,6 +164,25 @@ def create_reservation(
     return reservation
 
 
+def cancel_reservation(db: Session, reservation_id: int) -> None:
+    """予約を取り消し(論理削除)、コミットする
+
+    DBからは消さず、statusをcancelledにする。取り消した時間は、また予約できるようになる。
+
+    Args:
+        db (Session): DBのセッション
+        reservation_id (int): 予約ID
+
+    Raises:
+        AppError: 予約がない、またはすでに取り消し済みの時(404)
+    """
+    reservation = reservations_crud.get_reservation_by_id(db, reservation_id)
+    if reservation is None or reservation.status != reservations_crud.CONFIRMED:
+        raise AppError(404, "予約が見つかりません。")
+    reservation.status = reservations_crud.CANCELLED
+    db.commit()
+
+
 def seed_demo_reservations(db: Session) -> None:
     """予約が1件もなければ、明日からDEMO_DAYS日分のダミーの予約を登録し、コミットする
 

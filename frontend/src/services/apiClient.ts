@@ -76,6 +76,12 @@ export async function fetchAdminReservations(): Promise<ReservationItem[]> {
   return data.reservations;
 }
 
+// 予約を取り消す（論理削除。管理画面用）
+export async function cancelReservation(id: number): Promise<void> {
+  const res: Response = await fetch(`${API_BASE_URL}/admin/reservations/${id}`, { method: 'DELETE', headers: adminHeaders() });
+  if (!res.ok) await throwApiError(res, '予約の取り消しに失敗しました。');
+}
+
 // 新しく作られた順に予約履歴を取得する
 export async function fetchHistory(): Promise<HistoryItem[]> {
   const res: Response = await fetch(`${API_BASE_URL}/history`, { headers: adminHeaders() });

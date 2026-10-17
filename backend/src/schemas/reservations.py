@@ -67,6 +67,7 @@ class ReservationItem(UtcDatetimeModel):
     """GET /admin/reservationsの1件分
 
     Attributes:
+        id (int): 予約ID。取り消しなどで予約を指定するのに使う
         start_datetime (datetime): 開始日時(UTC)
         end_datetime (datetime): 終了日時(UTC)
         menu_name (str): メニュー名
@@ -74,6 +75,7 @@ class ReservationItem(UtcDatetimeModel):
         instagram_id (str | None): InstagramのID。管理画面でプロフィールへのリンクにする
         phone_number (str | None): 電話番号(数字11桁)。管理画面で電話をかけるリンクにする
     """
+    id: int
     start_datetime: datetime
     end_datetime: datetime
     menu_name: str

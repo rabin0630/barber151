@@ -182,6 +182,7 @@ def test_get_admin_reservations(admin_client: TestClient):
     assert response.json() == {
         "reservations": [
             {
+                "id": 1,
                 "start_datetime": "2026-10-12T01:00:00Z",
                 "end_datetime": "2026-10-12T02:00:00Z",
                 "menu_name": "フルコース",
@@ -191,6 +192,41 @@ def test_get_admin_reservations(admin_client: TestClient):
             }
         ]
     }
+
+
+def test_cancel_reservation(admin_client: TestClient, db: Session):
+    # 取り消すと一覧に出なくなり、同じ時間にまた予約できる。DBには残る
+    reserve(admin_client, "2026-10-12T01:00:00.000Z")
+
+    response = admin_client.delete("/admin/reservations/1")
+
+    assert response.status_code == 204
+    assert admin_client.get("/admin/reservations").json() == {"reservations": []}
+    assert admin_client.get("/reservations").json() == {"reservations": []}
+    assert db.get(Reservation, 1).status == "cancelled"
+    assert reserve(admin_client, "2026-10-12T01:00:00.000Z").status_code == 200
+
+
+def test_cancel_reservation_not_found(admin_client: TestClient):
+    # ない予約や、取り消し済みの予約は取り消せない
+    reserve(admin_client, "2026-10-12T01:00:00.000Z")
+    admin_client.delete("/admin/reservations/1")
+
+    for reservation_id in [1, 999]:
+        response = admin_client.delete(f"/admin/reservations/{reservation_id}")
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": "予約が見つかりません。"}
+
+
+def test_cancel_reservation_requires_token(client: TestClient, db: Session):
+    # トークンがないと取り消せない
+    reserve(client, "2026-10-12T01:00:00.000Z")
+
+    response = client.delete("/admin/reservations/1")
+
+    assert response.status_code == 401
+    assert db.get(Reservation, 1).status == "confirmed"
 
 
 def test_get_history(admin_client: TestClient):

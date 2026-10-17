@@ -1,5 +1,5 @@
 """予約のAPIのエンドポイント"""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from src.dependencies import get_db, require_admin
@@ -51,6 +51,7 @@ def get_reservations(db: Session = Depends(get_db)) -> ReservationsResponse:
     return ReservationsResponse(
         reservations=[
             ReservationItem(
+                id=r.id,
                 start_datetime=r.start_datetime,
                 end_datetime=r.end_datetime,
                 menu_name=r.menu.name,
@@ -61,6 +62,26 @@ def get_reservations(db: Session = Depends(get_db)) -> ReservationsResponse:
             for r in reservations
         ]
     )
+
+
+@router.delete(
+    "/admin/reservations/{reservation_id}", status_code=204, dependencies=[Depends(require_admin)]
+)
+def cancel_reservation(reservation_id: int, db: Session = Depends(get_db)) -> Response:
+    """DELETE /admin/reservations/{reservation_id}: 予約を取り消す(論理削除。管理用)
+
+    Args:
+        reservation_id (int): 予約ID
+        db (Session): DBのセッション
+
+    Returns:
+        Response: 中身のない204のレスポンス
+
+    Raises:
+        AppError: 予約がない、またはすでに取り消し済みの時(404)
+    """
+    reservation_service.cancel_reservation(db, reservation_id)
+    return Response(status_code=204)
 
 
 @router.get("/history", response_model=HistoryResponse, dependencies=[Depends(require_admin)])

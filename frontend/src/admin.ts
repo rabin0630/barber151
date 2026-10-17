@@ -1,6 +1,6 @@
 import { loadMenuManager } from './modules/adminMenu.ts';
 import { setupPhoneNumberInput } from './modules/phoneNumber.ts';
-import { createReservation, fetchAdminReservations, fetchHistory } from './services/apiClient.ts';
+import { cancelReservation, createReservation, fetchAdminReservations, fetchHistory } from './services/apiClient.ts';
 import type { AdminReservation, HistoryItem, ReservationItem } from './types/index.ts';
 
 const headerRow = document.getElementById('schedule-header') as HTMLTableRowElement;
@@ -38,6 +38,7 @@ async function loadAndRenderSchedule(): Promise<void> {
   try {
     const reservations: ReservationItem[] = await fetchAdminReservations();
     bookedReservations = reservations.map((r: ReservationItem): AdminReservation => ({
+      id: r.id,
       start: new Date(r.start_datetime),
       end: new Date(r.end_datetime),
       menuName: r.menu_name,
@@ -341,10 +342,19 @@ function createEmptyContact(): HTMLSpanElement {
   return span;
 }
 
-function openContactModal(res: AdminReservation): void {
+// 連絡先モーダルで開いている予約。取り消しの時に使う
+let contactReservation: AdminReservation | null = null;
+
+// 予約日時を「10/18(日) 10:00 〜 11:00」の形にする
+function formatReservationTime(res: AdminReservation): string {
   const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][res.start.getDay()];
+  return `${res.start.getMonth() + 1}/${res.start.getDate()}(${dayOfWeek}) ${res.start.getHours()}:00 〜 ${res.end.getHours()}:00`;
+}
+
+function openContactModal(res: AdminReservation): void {
+  contactReservation = res;
   contactCustomerName.textContent = `${res.customerName} 様`;
-  contactDatetime.textContent = `${res.start.getMonth() + 1}/${res.start.getDate()}(${dayOfWeek}) ${res.start.getHours()}:00 〜 ${res.end.getHours()}:00`;
+  contactDatetime.textContent = formatReservationTime(res);
   contactMenu.textContent = res.menuName;
 
   // 電話番号は押すと電話をかけられるようにする。表示は090-1234-5678の形にする
@@ -385,7 +395,76 @@ contactModal.addEventListener('click', (e: MouseEvent) => {
   if (e.target === contactModal) closeContactModal();
 });
 
-// Escキーでも閉じる
+// 「予約を取り消す」→ 確認モーダル →(はい)→ 完了モーダル
+const contactCancelBtn = document.getElementById('contact-cancel-btn') as HTMLButtonElement;
+const cancelConfirmModal = document.getElementById('cancel-confirm-modal') as HTMLDivElement;
+const cancelConfirmDetail = document.getElementById('cancel-confirm-detail') as HTMLParagraphElement;
+const cancelConfirmMessage = document.getElementById('cancel-confirm-message') as HTMLDivElement;
+const cancelConfirmNoBtn = document.getElementById('cancel-confirm-no-btn') as HTMLButtonElement;
+const cancelConfirmYesBtn = document.getElementById('cancel-confirm-yes-btn') as HTMLButtonElement;
+const cancelDoneModal = document.getElementById('cancel-done-modal') as HTMLDivElement;
+const cancelDoneCloseBtn = document.getElementById('cancel-done-close-btn') as HTMLButtonElement;
+
+// 完了モーダルが自動で消えるまでの時間(ミリ秒)
+const CANCEL_DONE_TIMEOUT_MS = 5000;
+let cancelDoneTimer: number | undefined;
+
+// 確認モーダルを開く。連絡先モーダルは下に残しておく
+contactCancelBtn.addEventListener('click', () => {
+  if (!contactReservation) return;
+  cancelConfirmDetail.textContent = `${contactReservation.customerName} 様の ${formatReservationTime(contactReservation)} の予約を取り消します。`;
+  cancelConfirmMessage.style.display = 'none';
+  cancelConfirmYesBtn.textContent = 'はい';
+  cancelConfirmYesBtn.disabled = false;
+  cancelConfirmModal.style.display = 'flex';
+  cancelConfirmNoBtn.focus(); // 間違えてEnterを押しても消えないよう、いいえを選んでおく
+});
+
+// いいえ: 確認モーダルだけ閉じて、連絡先モーダルに戻る
+function closeCancelConfirm(): void {
+  cancelConfirmModal.style.display = 'none';
+  contactCancelBtn.focus();
+}
+cancelConfirmNoBtn.addEventListener('click', closeCancelConfirm);
+
+// はい: 予約を取り消し、モーダルを全部閉じて完了モーダルだけを出す
+cancelConfirmYesBtn.addEventListener('click', async () => {
+  if (!contactReservation) return;
+  cancelConfirmYesBtn.textContent = '削除中...';
+  cancelConfirmYesBtn.disabled = true;
+  try {
+    await cancelReservation(contactReservation.id);
+  } catch (error: unknown) {
+    cancelConfirmMessage.textContent = error instanceof Error ? error.message : '予約の取り消しに失敗しました。';
+    cancelConfirmMessage.style.display = 'block';
+    cancelConfirmMessage.style.backgroundColor = '#fee2e2';
+    cancelConfirmMessage.style.color = '#991b1b';
+    cancelConfirmYesBtn.textContent = 'はい';
+    cancelConfirmYesBtn.disabled = false;
+    return;
+  }
+  cancelConfirmModal.style.display = 'none';
+  closeContactModal();
+  openCancelDone();
+  loadAndRenderSchedule(); // 取り消した予約をカレンダーから消す
+});
+
+function openCancelDone(): void {
+  cancelDoneModal.style.display = 'flex';
+  cancelDoneCloseBtn.focus();
+  cancelDoneTimer = window.setTimeout(closeCancelDone, CANCEL_DONE_TIMEOUT_MS);
+}
+
+function closeCancelDone(): void {
+  window.clearTimeout(cancelDoneTimer);
+  cancelDoneModal.style.display = 'none';
+}
+cancelDoneCloseBtn.addEventListener('click', closeCancelDone);
+
+// Escキーでは、いちばん上のモーダルだけを閉じる
 document.addEventListener('keydown', (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && contactModal.style.display !== 'none') closeContactModal();
+  if (e.key !== 'Escape') return;
+  if (cancelDoneModal.style.display !== 'none') closeCancelDone();
+  else if (cancelConfirmModal.style.display !== 'none') closeCancelConfirm();
+  else if (contactModal.style.display !== 'none') closeContactModal();
 });

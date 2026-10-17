@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from src.models import Reservation
 
 CONFIRMED = "confirmed"
+CANCELLED = "cancelled"
 
 
 def count_reservations(db: Session) -> int:
@@ -19,6 +20,19 @@ def count_reservations(db: Session) -> int:
         int: 予約の件数
     """
     return db.query(func.count(Reservation.id)).scalar()
+
+
+def get_reservation_by_id(db: Session, reservation_id: int) -> Reservation | None:
+    """予約IDで予約を1件探す。取り消し済みの予約も返す
+
+    Args:
+        db (Session): DBのセッション
+        reservation_id (int): 予約ID
+
+    Returns:
+        Reservation | None: 見つかった予約。なければNone
+    """
+    return db.get(Reservation, reservation_id)
 
 
 def get_confirmed_reservations(db: Session) -> list[Reservation]:
