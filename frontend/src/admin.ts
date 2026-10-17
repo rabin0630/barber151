@@ -1,6 +1,7 @@
 import { loadMenuManager } from './modules/adminMenu.ts';
 import { setupPhoneNumberInput } from './modules/phoneNumber.ts';
-import { cancelReservation, changeReservationContacts, changeReservationMenu, changeReservationName, createReservation, fetchAdminReservations, fetchHistory } from './services/apiClient.ts';
+import { cancelReservation, changeReservationContacts, changeReservationMenu, changeReservationName, createReservation, fetchAdminReservations, fetchHistory, getAdminToken, saveAdminToken, verifyAdminToken } from './services/apiClient.ts';
+
 import type { AdminReservation, HistoryItem, ReservationItem } from './types/index.ts';
 
 const headerRow = document.getElementById('schedule-header') as HTMLTableRowElement;
@@ -118,7 +119,75 @@ window.addEventListener('resize', () => {
   }
 });
 
-loadAndRenderSchedule();
+// 管理画面に入る時のトークン入力モーダル。予約や履歴は、トークンが正しいと確かめてから読み込む
+const loginModal = document.getElementById('admin-login-modal') as HTMLDivElement;
+const loginForm = document.getElementById('admin-login-form') as HTMLFormElement;
+const loginTokenInput = document.getElementById('admin-login-token') as HTMLInputElement;
+const loginMessage = document.getElementById('admin-login-message') as HTMLDivElement;
+const loginSubmitBtn = document.getElementById('admin-login-submit-btn') as HTMLButtonElement;
+
+const adminMain = document.getElementById('admin-main') as HTMLElement;
+const adminFooter = document.getElementById('admin-footer') as HTMLElement;
+
+// モーダルを閉じて管理画面の中身を表示し、予約と履歴を読み込む
+function enterAdmin(): void {
+  loginModal.style.display = 'none';
+  adminMain.style.display = '';
+  adminFooter.style.display = '';
+  loadAndRenderSchedule();
+}
+
+function showLoginError(message: string): void {
+  loginMessage.textContent = message;
+  loginMessage.style.display = 'block';
+  loginMessage.style.backgroundColor = '#fee2e2';
+  loginMessage.style.color = '#991b1b';
+}
+
+loginForm.addEventListener('submit', async (e: SubmitEvent) => {
+  e.preventDefault();
+  const token: string = loginTokenInput.value.trim();
+
+  loginSubmitBtn.textContent = '確認中...';
+  loginSubmitBtn.disabled = true;
+  loginMessage.style.display = 'none';
+
+  try {
+    if (await verifyAdminToken(token)) {
+      saveAdminToken(token);
+      enterAdmin();
+      return;
+    }
+    showLoginError('トークンが正しくありません。');
+    loginTokenInput.select();
+  } catch (error: unknown) {
+    showLoginError(error instanceof Error ? error.message : 'トークンの確認に失敗しました。');
+  } finally {
+    loginSubmitBtn.textContent = '入る';
+    loginSubmitBtn.disabled = false;
+  }
+});
+
+// このタブで一度入っていれば、保存したトークンを確かめて、モーダルを出さずに入る
+// 確かめている間はモーダルも出さない(一瞬モーダルが見えてしまうのを防ぐ)
+async function restoreLogin(): Promise<void> {
+  const savedToken: string = getAdminToken();
+  if (savedToken) {
+    try {
+      if (await verifyAdminToken(savedToken)) {
+        enterAdmin();
+        return;
+      }
+    } catch {
+      // 確かめられない時は、モーダルで入力し直してもらう
+    }
+  }
+  loginModal.style.display = 'flex';
+  loginTokenInput.focus();
+}
+
+restoreLogin();
+
 loadMenuManager();
 
 nextBtns.forEach((btn: HTMLButtonElement) => {
