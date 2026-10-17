@@ -214,16 +214,24 @@ function renderSchedule(startDate: Date): void {
       if (res) {
         // 予約の所要時間を計算
         const duration: number = Math.round((res.end.getTime() - res.start.getTime()) / (1000 * 60 * 60));
-        // 管理者用として、メニュー名とお客様名をセルに表示
-        td.innerHTML = `${res.menuName}<br><span style="font-size:0.7rem; color:#475569;">${res.customerName}</span>`;
+        // 管理者用として、メニュー名・お客様名・InstagramのIDを押せるカードにして表示
+        const card: HTMLDivElement = document.createElement('div');
+        card.className = 'booking-card';
+        const menuSpan: HTMLSpanElement = document.createElement('span');
+        menuSpan.className = 'booking-card-menu';
+        menuSpan.textContent = res.menuName;
+        const nameSpan: HTMLSpanElement = document.createElement('span');
+        nameSpan.className = 'booking-card-name';
+        nameSpan.textContent = res.customerName;
+        card.append(menuSpan, nameSpan);
         if (res.instagramId) {
           // InstagramのプロフィールへのリンクはモーダルにあるのでIDだけ出す
           const instagramSpan: HTMLSpanElement = document.createElement('span');
+          instagramSpan.className = 'booking-card-instagram';
           instagramSpan.textContent = `@${res.instagramId.replace(/^@/, '')}`;
-          instagramSpan.style.fontSize = '0.7rem';
-          instagramSpan.style.color = '#2563eb';
-          td.append(document.createElement('br'), instagramSpan);
+          card.append(instagramSpan);
         }
+        td.append(card);
         td.className = 'booked-cell';
         // 押したら、お客様に連絡を取るためのモーダルを開く
         td.title = '連絡先を見る';
