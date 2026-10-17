@@ -4,15 +4,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>barber151 - 予約</title>
+  <title>Barber - 予約</title>
   <link rel="stylesheet" href="/src/style.css">
+  <!-- ロゴ(Barber)をトップページと同じCinzelにする -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
 </head>
 
 <body>
   <!-- ヘッダー -->
   <header class="site-header">
     <a href="index.html">
-      <h1>barber151</h1>
+      <h1>Barber</h1>
     </a>
     <nav class="header-nav">
       <a href="index.html" class="nav-link active">予約画面</a>
@@ -87,7 +91,7 @@
 
           <div class="form-group">
             <label for="customer-instagram">Instagram ID（どちらか必須）</label>
-            <input type="text" id="customer-instagram" placeholder="例: @barber151" pattern="@?[A-Za-z0-9._]{1,30}"
+            <input type="text" id="customer-instagram" placeholder="例: @barber" pattern="@?[A-Za-z0-9._]{1,30}"
               maxlength="31" autocapitalize="off" style="ime-mode: disabled;">
             <p class="field-error">英数字・ピリオド・アンダースコアの30文字以内で入力してください</p>
           </div>
