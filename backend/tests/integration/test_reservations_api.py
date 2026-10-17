@@ -185,6 +185,7 @@ def test_get_admin_reservations(admin_client: TestClient):
                 "id": 1,
                 "start_datetime": "2026-10-12T01:00:00Z",
                 "end_datetime": "2026-10-12T02:00:00Z",
+                "menu_id": menu_id_of("フルコース"),
                 "menu_name": "フルコース",
                 "customer_name": "山田",
                 "instagram_id": None,
@@ -227,6 +228,59 @@ def test_cancel_reservation_requires_token(client: TestClient, db: Session):
 
     assert response.status_code == 401
     assert db.get(Reservation, 1).status == "confirmed"
+
+
+def test_change_reservation_menu(admin_client: TestClient, db: Session):
+    # メニューを変えると、所要時間に合わせて終了時刻も変わる
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="カット")
+
+    response = admin_client.patch("/admin/reservations/1", json={"menu_id": menu_id_of("パンチパーマ")})
+
+    assert response.status_code == 200
+    assert response.json()["menu_name"] == "パンチパーマ"
+    assert response.json()["end_datetime"] == "2026-10-12T04:00:00Z"
+    reservation = db.get(Reservation, 1)
+    assert reservation.menu_id == menu_id_of("パンチパーマ")
+    assert reservation.end_datetime.isoformat() == "2026-10-12T04:00:00"
+
+
+def test_change_reservation_menu_overlap(admin_client: TestClient, db: Session):
+    # 長くして次の予約と重なる時は変えない。ちょうど次の予約の前までなら変えられる
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="カット")
+    reserve(admin_client, "2026-10-12T03:00:00.000Z", menu_name="カット")
+
+    overlapped = admin_client.patch("/admin/reservations/1", json={"menu_id": menu_id_of("パンチパーマ")})
+    adjacent = admin_client.patch("/admin/reservations/1", json={"menu_id": menu_id_of("カラー")})
+
+    assert overlapped.status_code == 409
+    assert overlapped.json() == {"detail": "このあと予約している人がいるため延長できません。"}
+    assert adjacent.status_code == 200
+    assert db.get(Reservation, 1).end_datetime.isoformat() == "2026-10-12T03:00:00"
+
+
+def test_change_reservation_menu_shorter(admin_client: TestClient):
+    # 短くするのは、自分自身と重なっていても変えられる
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="パンチパーマ")
+
+    response = admin_client.patch("/admin/reservations/1", json={"menu_id": menu_id_of("カット")})
+
+    assert response.status_code == 200
+    assert response.json()["end_datetime"] == "2026-10-12T02:00:00Z"
+
+
+def test_change_reservation_menu_invalid(admin_client: TestClient):
+    # ない予約や、ないメニューには変えられない
+    reserve(admin_client, "2026-10-12T01:00:00.000Z")
+
+    assert admin_client.patch("/admin/reservations/999", json={"menu_id": 1}).status_code == 404
+    assert admin_client.patch("/admin/reservations/1", json={"menu_id": 999}).status_code == 400
+
+
+def test_change_reservation_menu_requires_token(client: TestClient):
+    # トークンがないと変えられない
+    reserve(client, "2026-10-12T01:00:00.000Z")
+
+    assert client.patch("/admin/reservations/1", json={"menu_id": 1}).status_code == 401
 
 
 def test_get_history(admin_client: TestClient):

@@ -71,26 +71,28 @@ def get_latest_reservations(db: Session, limit: int) -> list[Reservation]:
     )
 
 
-def count_overlapping_reservations(db: Session, start: datetime, end: datetime) -> int:
+def count_overlapping_reservations(
+    db: Session, start: datetime, end: datetime, exclude_id: int | None = None
+) -> int:
     """[start, end)と時間が重なる確定済みの予約を数える
 
     Args:
         db (Session): DBのセッション
         start (datetime): 開始日時(UTC、タイムゾーンなし)
         end (datetime): 終了日時(UTC、タイムゾーンなし)
+        exclude_id (int | None): 数えない予約のID。予約を変更する時に、その予約自身を除くのに使う
 
     Returns:
         int: 重なる予約の件数
     """
-    return (
-        db.query(func.count(Reservation.id))
-        .filter(
-            Reservation.status == CONFIRMED,
-            Reservation.start_datetime < end,
-            Reservation.end_datetime > start,
-        )
-        .scalar()
+    query = db.query(func.count(Reservation.id)).filter(
+        Reservation.status == CONFIRMED,
+        Reservation.start_datetime < end,
+        Reservation.end_datetime > start,
     )
+    if exclude_id is not None:
+        query = query.filter(Reservation.id != exclude_id)
+    return query.scalar()
 
 
 def create_reservation(

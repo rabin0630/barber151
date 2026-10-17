@@ -1,6 +1,6 @@
 import { loadMenuManager } from './modules/adminMenu.ts';
 import { setupPhoneNumberInput } from './modules/phoneNumber.ts';
-import { cancelReservation, createReservation, fetchAdminReservations, fetchHistory } from './services/apiClient.ts';
+import { cancelReservation, changeReservationMenu, createReservation, fetchAdminReservations, fetchHistory } from './services/apiClient.ts';
 import type { AdminReservation, HistoryItem, ReservationItem } from './types/index.ts';
 
 const headerRow = document.getElementById('schedule-header') as HTMLTableRowElement;
@@ -33,19 +33,25 @@ if (dateJumpInput) {
   });
 }
 
+// APIの予約1件を、カレンダー描画用の形にする
+function toAdminReservation(r: ReservationItem): AdminReservation {
+  return {
+    id: r.id,
+    start: new Date(r.start_datetime),
+    end: new Date(r.end_datetime),
+    menuId: r.menu_id,
+    menuName: r.menu_name,
+    customerName: r.customer_name,
+    instagramId: r.instagram_id,
+    phoneNumber: r.phone_number
+  };
+}
+
 // サーバーから予約情報を取得してカレンダーを描画する関数
 async function loadAndRenderSchedule(): Promise<void> {
   try {
     const reservations: ReservationItem[] = await fetchAdminReservations();
-    bookedReservations = reservations.map((r: ReservationItem): AdminReservation => ({
-      id: r.id,
-      start: new Date(r.start_datetime),
-      end: new Date(r.end_datetime),
-      menuName: r.menu_name,
-      customerName: r.customer_name,
-      instagramId: r.instagram_id,
-      phoneNumber: r.phone_number
-    }));
+    bookedReservations = reservations.map(toAdminReservation);
   } catch (e: unknown) {
     console.error('予約データの取得に失敗しました', e);
   }
@@ -337,7 +343,7 @@ adminForm.addEventListener('submit', async (e: SubmitEvent) => {
 const contactModal = document.getElementById('admin-contact-modal') as HTMLDivElement;
 const contactCustomerName = document.getElementById('contact-customer-name') as HTMLHeadingElement;
 const contactDatetime = document.getElementById('contact-datetime') as HTMLElement;
-const contactMenu = document.getElementById('contact-menu') as HTMLElement;
+const contactMenuSelect = document.getElementById('contact-menu-select') as HTMLSelectElement;
 const contactPhone = document.getElementById('contact-phone') as HTMLElement;
 const contactInstagram = document.getElementById('contact-instagram') as HTMLElement;
 const contactCloseBtn = document.getElementById('contact-close-btn') as HTMLButtonElement;
@@ -363,7 +369,7 @@ function openContactModal(res: AdminReservation): void {
   contactReservation = res;
   contactCustomerName.textContent = `${res.customerName} 様`;
   contactDatetime.textContent = formatReservationTime(res);
-  contactMenu.textContent = res.menuName;
+  selectContactMenu(res);
 
   // 電話番号は押すと電話をかけられるようにする。表示は090-1234-5678の形にする
   if (res.phoneNumber) {
@@ -391,6 +397,51 @@ function openContactModal(res: AdminReservation): void {
   contactModal.style.display = 'flex';
   contactCloseBtn.focus();
 }
+
+// メニューの選択肢で、予約の今のメニューを選んでおく
+// 削除済みのメニューは選択肢にないので、選べない選択肢として一時的に足す
+function selectContactMenu(res: AdminReservation): void {
+  contactMenuSelect.querySelector('option[data-removed-menu]')?.remove();
+  contactMenuSelect.value = String(res.menuId);
+  if (contactMenuSelect.value !== String(res.menuId)) {
+    const option: HTMLOptionElement = new Option(`${res.menuName}（削除済み）`, String(res.menuId));
+    option.disabled = true;
+    option.dataset.removedMenu = '';
+    contactMenuSelect.prepend(option);
+    contactMenuSelect.value = String(res.menuId);
+  }
+}
+
+// メニューを選んだ瞬間に変更する。延長できない時などは、エラーのモーダルを重ねて元のメニューに戻す
+const changeMenuErrorModal = document.getElementById('change-menu-error-modal') as HTMLDivElement;
+const changeMenuErrorMessage = document.getElementById('change-menu-error-message') as HTMLParagraphElement;
+const changeMenuErrorCloseBtn = document.getElementById('change-menu-error-close-btn') as HTMLButtonElement;
+
+contactMenuSelect.addEventListener('change', async () => {
+  if (!contactReservation) return;
+  const reservation: AdminReservation = contactReservation;
+  contactMenuSelect.disabled = true;
+  try {
+    const updated: AdminReservation = toAdminReservation(await changeReservationMenu(reservation.id, Number(contactMenuSelect.value)));
+    contactReservation = updated;
+    contactDatetime.textContent = formatReservationTime(updated);
+    selectContactMenu(updated);
+    loadAndRenderSchedule(); // 長さが変わった分、カレンダーを描き直す
+  } catch (error: unknown) {
+    selectContactMenu(reservation);
+    changeMenuErrorMessage.textContent = error instanceof Error ? error.message : 'メニューの変更に失敗しました。';
+    changeMenuErrorModal.style.display = 'flex';
+    changeMenuErrorCloseBtn.focus();
+  } finally {
+    contactMenuSelect.disabled = false;
+  }
+});
+
+function closeChangeMenuError(): void {
+  changeMenuErrorModal.style.display = 'none';
+  contactMenuSelect.focus();
+}
+changeMenuErrorCloseBtn.addEventListener('click', closeChangeMenuError);
 
 function closeContactModal(): void {
   contactModal.style.display = 'none';
@@ -473,6 +524,7 @@ cancelDoneCloseBtn.addEventListener('click', closeCancelDone);
 document.addEventListener('keydown', (e: KeyboardEvent) => {
   if (e.key !== 'Escape') return;
   if (cancelDoneModal.style.display !== 'none') closeCancelDone();
+  else if (changeMenuErrorModal.style.display !== 'none') closeChangeMenuError();
   else if (cancelConfirmModal.style.display !== 'none') closeCancelConfirm();
   else if (contactModal.style.display !== 'none') closeContactModal();
 });

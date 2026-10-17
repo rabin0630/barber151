@@ -76,6 +76,17 @@ export async function fetchAdminReservations(): Promise<ReservationItem[]> {
   return data.reservations;
 }
 
+// 予約のメニューを変える。終了時刻はメニューの所要時間に合わせてサーバーが決める（管理画面用）
+export async function changeReservationMenu(id: number, menuId: number): Promise<ReservationItem> {
+  const res: Response = await fetch(`${API_BASE_URL}/admin/reservations/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...adminHeaders() },
+    body: JSON.stringify({ menu_id: menuId }),
+  });
+  if (!res.ok) await throwApiError(res, 'メニューの変更に失敗しました。');
+  return res.json();
+}
+
 // 予約を取り消す（論理削除。管理画面用）
 export async function cancelReservation(id: number): Promise<void> {
   const res: Response = await fetch(`${API_BASE_URL}/admin/reservations/${id}`, { method: 'DELETE', headers: adminHeaders() });

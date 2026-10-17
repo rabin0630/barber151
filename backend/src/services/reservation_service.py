@@ -164,6 +164,63 @@ def create_reservation(
     return reservation
 
 
+def get_confirmed_reservation(db: Session, reservation_id: int) -> Reservation:
+    """確定済みの予約を1件返す
+
+    Args:
+        db (Session): DBのセッション
+        reservation_id (int): 予約ID
+
+    Returns:
+        Reservation: 確定済みの予約
+
+    Raises:
+        AppError: 予約がない、またはすでに取り消し済みの時(404)
+    """
+    reservation = reservations_crud.get_reservation_by_id(db, reservation_id)
+    if reservation is None or reservation.status != reservations_crud.CONFIRMED:
+        raise AppError(404, "予約が見つかりません。")
+    return reservation
+
+
+def change_reservation_menu(db: Session, reservation_id: int, menu_id: int) -> Reservation:
+    """予約のメニューを変え、終了日時をメニューの所要時間に合わせて、コミットする
+
+    開始日時はそのまま。長くなって次の予約と重なる時は変えない。
+
+    Args:
+        db (Session): DBのセッション
+        reservation_id (int): 予約ID
+        menu_id (int): 新しいメニューID
+
+    Returns:
+        Reservation: 変更した予約
+
+    Raises:
+        AppError: 変更できない時。次のどれか
+            - 予約がない、またはすでに取り消し済み(404)
+            - メニューIDがない、または削除済み(400)
+            - 長くなった分が、他の予約と重なる(409)
+    """
+    reservation = get_confirmed_reservation(db, reservation_id)
+
+    menu = menus_crud.get_menu_by_id(db, menu_id)
+    if menu is None or not menu.is_active:
+        raise AppError(400, "無効なメニューです。")
+
+    end = reservation.start_datetime + timedelta(hours=menu.duration)
+    if reservations_crud.count_overlapping_reservations(
+        db, reservation.start_datetime, end, exclude_id=reservation.id
+    ) > 0:
+        raise AppError(409, "このあと予約している人がいるため延長できません。")
+
+    reservation.menu_id = menu.id
+    reservation.end_datetime = end
+    db.commit()
+    db.refresh(reservation)
+    return reservation
+
+
 def cancel_reservation(db: Session, reservation_id: int) -> None:
     """予約を取り消し(論理削除)、コミットする
 
@@ -176,9 +233,7 @@ def cancel_reservation(db: Session, reservation_id: int) -> None:
     Raises:
         AppError: 予約がない、またはすでに取り消し済みの時(404)
     """
-    reservation = reservations_crud.get_reservation_by_id(db, reservation_id)
-    if reservation is None or reservation.status != reservations_crud.CONFIRMED:
-        raise AppError(404, "予約が見つかりません。")
+    reservation = get_confirmed_reservation(db, reservation_id)
     reservation.status = reservations_crud.CANCELLED
     db.commit()
 

@@ -176,6 +176,25 @@
     .contact-row dd a {
       color: #2563eb;
     }
+    /* 連絡先モーダルのメニュー。選ぶとすぐに変わる */
+    .contact-row dd select {
+      width: auto;
+      max-width: 100%;
+      min-height: 44px;
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      background: #ffffff;
+      font-size: 16px;
+      font-weight: bold;
+      font-family: inherit;
+      color: #111827;
+      cursor: pointer;
+    }
+    .contact-row dd select:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
     .contact-empty {
       color: #9ca3af;
       font-weight: normal;
@@ -280,7 +299,9 @@
         </div>
         <div class="contact-row">
           <dt>メニュー</dt>
-          <dd id="contact-menu"></dd>
+          <dd>
+            <select id="contact-menu-select" aria-label="メニューを変更"></select>
+          </dd>
         </div>
         <div class="contact-row">
           <dt>電話番号</dt>
@@ -313,6 +334,14 @@
         <button type="button" id="cancel-confirm-no-btn" class="nav-btn">いいえ</button>
         <button type="button" id="cancel-confirm-yes-btn" class="contact-cancel-btn">はい</button>
       </div>
+    </div>
+  </div>
+
+  <!-- メニューを変えられなかった時のモーダル。連絡先モーダルの上に重ねる -->
+  <div id="change-menu-error-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" role="alertdialog" aria-modal="true" aria-labelledby="change-menu-error-message" style="max-width: 400px; text-align: center;">
+      <p id="change-menu-error-message" style="font-weight: bold; color: #991b1b; margin: 0 0 1.5rem;"></p>
+      <button type="button" id="change-menu-error-close-btn" class="nav-btn" style="width: 100%;">閉じる</button>
     </div>
   </div>
 
