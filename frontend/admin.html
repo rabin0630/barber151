@@ -160,7 +160,9 @@
 
         <div class="form-group">
           <label for="admin-customer-instagram">Instagram ID（どちらか必須）</label>
-          <input type="text" id="admin-customer-instagram" placeholder="例: @barber151">
+          <input type="text" id="admin-customer-instagram" placeholder="例: @barber151" pattern="@?[A-Za-z0-9._]{1,30}"
+            maxlength="31" autocapitalize="off" title="英数字・ピリオド・アンダースコアの30文字以内で入力してください">
+          <p class="field-error">英数字・ピリオド・アンダースコアの30文字以内で入力してください</p>
         </div>
 
         <div class="form-group">

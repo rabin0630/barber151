@@ -41,7 +41,8 @@ async function loadAndRenderSchedule(): Promise<void> {
       start: new Date(r.start_datetime),
       end: new Date(r.end_datetime),
       menuName: r.menu_name,
-      customerName: r.customer_name
+      customerName: r.customer_name,
+      instagramId: r.instagram_id
     }));
   } catch (e: unknown) {
     console.error('予約データの取得に失敗しました', e);
@@ -213,6 +214,18 @@ function renderSchedule(startDate: Date): void {
         const duration: number = Math.round((res.end.getTime() - res.start.getTime()) / (1000 * 60 * 60));
         // 管理者用として、メニュー名とお客様名をセルに表示
         td.innerHTML = `${res.menuName}<br><span style="font-size:0.7rem; color:#475569;">${res.customerName}</span>`;
+        if (res.instagramId) {
+          // お店の人がタップして、Instagramに実在するIDか確かめられるようにする
+          const instagramId: string = res.instagramId.replace(/^@/, '');
+          const link: HTMLAnchorElement = document.createElement('a');
+          link.href = `https://www.instagram.com/${encodeURIComponent(instagramId)}/`;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = `@${instagramId}`;
+          link.style.fontSize = '0.7rem';
+          link.style.color = '#2563eb';
+          td.append(document.createElement('br'), link);
+        }
         td.className = 'booked-cell';
         if (duration > 1) {
           td.rowSpan = duration; // セルを縦に結合

@@ -79,6 +79,24 @@ def test_contact_instagram_only(client: TestClient, db: Session):
     assert reservation.phone_number is None
 
 
+def test_instagram_id_at_mark(client: TestClient, db: Session):
+    # 先頭の@は取り除いて保存する
+    response = reserve(client, "2026-10-12T01:00:00.000Z", instagram_id="@barber_151.jp")
+
+    assert response.status_code == 200
+    assert db.query(Reservation).one().instagram_id == "barber_151.jp"
+
+
+@pytest.mark.parametrize("instagram_id", ["barber 151", "barber-151", "バーバー", "a" * 31])
+def test_instagram_id_invalid(client: TestClient, db: Session, instagram_id: str):
+    # 英数字・ピリオド・アンダースコアの30文字以内でないと登録できない
+    response = reserve(client, "2026-10-12T01:00:00.000Z", instagram_id=instagram_id)
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Instagram IDは英数字・ピリオド・アンダースコアの30文字以内で入力してください。"}
+    assert db.query(Reservation).count() == 0
+
+
 def test_invalid_menu(client: TestClient, db: Session):
     # ないメニューでは登録できない
     body = {"name": "山田", "phone_number": "09000000000", "menu_id": 999, "reservation_date": "2026-10-12T01:00:00.000Z"}
@@ -136,6 +154,15 @@ def test_get_reservation_slots(client: TestClient):
     }
 
 
+def test_get_admin_reservations_instagram_id(admin_client: TestClient):
+    # 管理用は、InstagramのIDも返す
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", instagram_id="barber151")
+
+    response = admin_client.get("/admin/reservations")
+
+    assert response.json()["reservations"][0]["instagram_id"] == "barber151"
+
+
 def test_get_admin_reservations(admin_client: TestClient):
     # 管理用は、メニュー名とお客様の名前もつけて返す
     reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="フルコース")
@@ -150,6 +177,7 @@ def test_get_admin_reservations(admin_client: TestClient):
                 "end_datetime": "2026-10-12T02:00:00Z",
                 "menu_name": "フルコース",
                 "customer_name": "山田",
+                "instagram_id": None,
             }
         ]
     }

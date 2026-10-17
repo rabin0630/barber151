@@ -71,11 +71,13 @@ class ReservationItem(UtcDatetimeModel):
         end_datetime (datetime): 終了日時(UTC)
         menu_name (str): メニュー名
         customer_name (str): お客様の名前
+        instagram_id (str | None): InstagramのID。管理画面でプロフィールへのリンクにする
     """
     start_datetime: datetime
     end_datetime: datetime
     menu_name: str
     customer_name: str
+    instagram_id: str | None
 
 
 class ReservationsResponse(BaseModel):
