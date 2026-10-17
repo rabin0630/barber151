@@ -100,6 +100,9 @@ def create_reservation(
             - メニューIDがない、または削除済み
             - 他の予約と時間が重なる
     """
+    # 空白だけの入力は、入力なしとして扱う
+    instagram_id = (instagram_id or "").strip() or None
+    phone_number = (phone_number or "").strip() or None
     if not instagram_id and not phone_number:
         raise AppError(400, "Instagram ID または 電話番号のどちらかを入力してください。")
 
