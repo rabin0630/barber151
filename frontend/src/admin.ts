@@ -1,4 +1,5 @@
 import { loadMenuManager } from './modules/adminMenu.ts';
+import { setupPhoneNumberInput } from './modules/phoneNumber.ts';
 import { createReservation, fetchAdminReservations, fetchHistory } from './services/apiClient.ts';
 import type { AdminReservation, HistoryItem, ReservationItem } from './types/index.ts';
 
@@ -247,6 +248,7 @@ const adminForm = document.getElementById('admin-reservation-form') as HTMLFormE
 const cancelBtn = document.getElementById('modal-cancel-btn') as HTMLButtonElement;
 const adminStatusMessage = document.getElementById('admin-status-message') as HTMLDivElement;
 const adminSubmitBtn = document.getElementById('admin-submit-btn') as HTMLButtonElement;
+setupPhoneNumberInput(document.getElementById('admin-customer-phone') as HTMLInputElement);
 
 function openReservationModal(slotStart: Date): void {
   const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][slotStart.getDay()];
