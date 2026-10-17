@@ -72,12 +72,14 @@ class ReservationItem(UtcDatetimeModel):
         menu_name (str): メニュー名
         customer_name (str): お客様の名前
         instagram_id (str | None): InstagramのID。管理画面でプロフィールへのリンクにする
+        phone_number (str | None): 電話番号(数字11桁)。管理画面で電話をかけるリンクにする
     """
     start_datetime: datetime
     end_datetime: datetime
     menu_name: str
     customer_name: str
     instagram_id: str | None
+    phone_number: str | None
 
 
 class ReservationsResponse(BaseModel):

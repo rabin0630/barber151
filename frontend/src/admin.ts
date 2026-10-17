@@ -42,7 +42,8 @@ async function loadAndRenderSchedule(): Promise<void> {
       end: new Date(r.end_datetime),
       menuName: r.menu_name,
       customerName: r.customer_name,
-      instagramId: r.instagram_id
+      instagramId: r.instagram_id,
+      phoneNumber: r.phone_number
     }));
   } catch (e: unknown) {
     console.error('予約データの取得に失敗しました', e);
@@ -215,18 +216,17 @@ function renderSchedule(startDate: Date): void {
         // 管理者用として、メニュー名とお客様名をセルに表示
         td.innerHTML = `${res.menuName}<br><span style="font-size:0.7rem; color:#475569;">${res.customerName}</span>`;
         if (res.instagramId) {
-          // お店の人がタップして、Instagramに実在するIDか確かめられるようにする
-          const instagramId: string = res.instagramId.replace(/^@/, '');
-          const link: HTMLAnchorElement = document.createElement('a');
-          link.href = `https://www.instagram.com/${encodeURIComponent(instagramId)}/`;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          link.textContent = `@${instagramId}`;
-          link.style.fontSize = '0.7rem';
-          link.style.color = '#2563eb';
-          td.append(document.createElement('br'), link);
+          // InstagramのプロフィールへのリンクはモーダルにあるのでIDだけ出す
+          const instagramSpan: HTMLSpanElement = document.createElement('span');
+          instagramSpan.textContent = `@${res.instagramId.replace(/^@/, '')}`;
+          instagramSpan.style.fontSize = '0.7rem';
+          instagramSpan.style.color = '#2563eb';
+          td.append(document.createElement('br'), instagramSpan);
         }
         td.className = 'booked-cell';
+        // 押したら、お客様に連絡を取るためのモーダルを開く
+        td.title = '連絡先を見る';
+        td.onclick = () => openContactModal(res);
         if (duration > 1) {
           td.rowSpan = duration; // セルを縦に結合
           skipCells[index] = duration - 1; // 結合した分だけ、下の時間のセル作成をスキップさせる
@@ -322,4 +322,70 @@ adminForm.addEventListener('submit', async (e: SubmitEvent) => {
     adminSubmitBtn.textContent = '追加する';
     adminSubmitBtn.disabled = false;
   }
+});
+
+// 予約セルを押した時の、お客様に連絡を取るためのモーダル
+const contactModal = document.getElementById('admin-contact-modal') as HTMLDivElement;
+const contactCustomerName = document.getElementById('contact-customer-name') as HTMLHeadingElement;
+const contactDatetime = document.getElementById('contact-datetime') as HTMLElement;
+const contactMenu = document.getElementById('contact-menu') as HTMLElement;
+const contactPhone = document.getElementById('contact-phone') as HTMLElement;
+const contactInstagram = document.getElementById('contact-instagram') as HTMLElement;
+const contactCloseBtn = document.getElementById('contact-close-btn') as HTMLButtonElement;
+
+// 連絡先がない時の「未登録」の表示
+function createEmptyContact(): HTMLSpanElement {
+  const span: HTMLSpanElement = document.createElement('span');
+  span.className = 'contact-empty';
+  span.textContent = '未登録';
+  return span;
+}
+
+function openContactModal(res: AdminReservation): void {
+  const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][res.start.getDay()];
+  contactCustomerName.textContent = `${res.customerName} 様`;
+  contactDatetime.textContent = `${res.start.getMonth() + 1}/${res.start.getDate()}(${dayOfWeek}) ${res.start.getHours()}:00 〜 ${res.end.getHours()}:00`;
+  contactMenu.textContent = res.menuName;
+
+  // 電話番号は押すと電話をかけられるようにする。表示は090-1234-5678の形にする
+  if (res.phoneNumber) {
+    const phoneLink: HTMLAnchorElement = document.createElement('a');
+    phoneLink.href = `tel:${res.phoneNumber}`;
+    phoneLink.textContent = res.phoneNumber.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
+    contactPhone.replaceChildren(phoneLink);
+  } else {
+    contactPhone.replaceChildren(createEmptyContact());
+  }
+
+  // Instagramは押すとプロフィールを新しいタブで開く
+  if (res.instagramId) {
+    const instagramId: string = res.instagramId.replace(/^@/, '');
+    const instagramLink: HTMLAnchorElement = document.createElement('a');
+    instagramLink.href = `https://www.instagram.com/${encodeURIComponent(instagramId)}/`;
+    instagramLink.target = '_blank';
+    instagramLink.rel = 'noopener noreferrer';
+    instagramLink.textContent = `@${instagramId}`;
+    contactInstagram.replaceChildren(instagramLink);
+  } else {
+    contactInstagram.replaceChildren(createEmptyContact());
+  }
+
+  contactModal.style.display = 'flex';
+  contactCloseBtn.focus();
+}
+
+function closeContactModal(): void {
+  contactModal.style.display = 'none';
+}
+
+contactCloseBtn.addEventListener('click', closeContactModal);
+
+// モーダルの外側(暗い部分)を押しても閉じる
+contactModal.addEventListener('click', (e: MouseEvent) => {
+  if (e.target === contactModal) closeContactModal();
+});
+
+// Escキーでも閉じる
+document.addEventListener('keydown', (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && contactModal.style.display !== 'none') closeContactModal();
 });

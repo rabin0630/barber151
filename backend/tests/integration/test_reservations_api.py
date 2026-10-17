@@ -163,6 +163,15 @@ def test_get_admin_reservations_instagram_id(admin_client: TestClient):
     assert response.json()["reservations"][0]["instagram_id"] == "barber151"
 
 
+def test_get_admin_reservations_phone_number(admin_client: TestClient):
+    # 管理用は、電話番号も数字だけの形で返す
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", phone_number="090-1234-5678")
+
+    response = admin_client.get("/admin/reservations")
+
+    assert response.json()["reservations"][0]["phone_number"] == "09012345678"
+
+
 def test_get_admin_reservations(admin_client: TestClient):
     # 管理用は、メニュー名とお客様の名前もつけて返す
     reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="フルコース")
@@ -178,6 +187,7 @@ def test_get_admin_reservations(admin_client: TestClient):
                 "menu_name": "フルコース",
                 "customer_name": "山田",
                 "instagram_id": None,
+                "phone_number": "09000000000",
             }
         ]
     }
