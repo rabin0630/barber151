@@ -199,22 +199,36 @@
       color: #9ca3af;
       font-weight: normal;
     }
-    /* 電話番号・Instagramの値。押すと編集のモーダルを開く */
+    /* 名前・電話番号・Instagramの値。押すと編集のモーダルを開く */
+    /* 下線の代わりに、薄いインディゴの帯とペンのアイコンで押せることを伝える */
     .contact-value-btn {
-      min-height: 44px;
-      padding: 0.25rem 0.5rem;
-      background: none;
-      border: none;
-      border-radius: 4px;
-      color: #2563eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      min-height: 40px;
+      padding: 0.25rem 0.75rem;
+      background: #eef2ff;
+      border: 1px solid transparent;
+      border-radius: 9999px;
+      color: #4f46e5;
       font-size: 1rem;
       font-weight: bold;
       font-family: inherit;
-      text-decoration: underline;
       cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    .contact-value-btn::after {
+      content: "✎";
+      font-size: 0.9rem;
+      opacity: 0.7;
     }
     .contact-value-btn:hover {
-      background: #eff6ff;
+      background: #e0e7ff;
+      border-color: #c7d2fe;
+    }
+    .contact-value-btn:focus-visible {
+      outline: 3px solid rgba(79, 70, 229, 0.3);
+      outline-offset: 2px;
     }
 
     /* 連絡先の編集モーダル */
