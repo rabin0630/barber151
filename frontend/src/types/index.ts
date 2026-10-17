@@ -35,9 +35,12 @@ export interface Reservation {
 
 /** 管理画面のカレンダー描画用の予約 */
 export interface AdminReservation extends Reservation {
+  id: number;
+  menuId: number;
   menuName: string;
   customerName: string;
   instagramId: string | null;
+  phoneNumber: string | null;
 }
 
 // ==========================================
@@ -57,11 +60,14 @@ export interface ReservationSlotsResponse {
 
 /** GET /admin/reservations の予約1件 */
 export interface ReservationItem {
+  id: number;
   start_datetime: string;
   end_datetime: string;
+  menu_id: number;
   menu_name: string;
   customer_name: string;
   instagram_id: string | null;
+  phone_number: string | null;
 }
 
 /** GET /admin/reservations のレスポンス */

@@ -7,18 +7,42 @@ from sqlalchemy.orm import Session, joinedload
 from src.models import Reservation
 
 CONFIRMED = "confirmed"
+CANCELLED = "cancelled"
 
 
-def count_reservations(db: Session) -> int:
-    """予約の件数を数える
+def delete_all_reservations(db: Session) -> None:
+    """予約をすべて消す。コミットしない
 
     Args:
         db (Session): DBのセッション
+    """
+    db.query(Reservation).delete()
+
+
+def delete_reservations_created_between(db: Session, after: datetime, until: datetime) -> None:
+    """作成日時が(after, until]の予約を消す。コミットしない
+
+    Args:
+        db (Session): DBのセッション
+        after (datetime): この日時より後に作られた予約を消す(UTC、タイムゾーンなし)
+        until (datetime): この日時までに作られた予約を消す(UTC、タイムゾーンなし)
+    """
+    db.query(Reservation).filter(
+        Reservation.created_at > after, Reservation.created_at <= until
+    ).delete()
+
+
+def get_reservation_by_id(db: Session, reservation_id: int) -> Reservation | None:
+    """予約IDで予約を1件探す。取り消し済みの予約も返す
+
+    Args:
+        db (Session): DBのセッション
+        reservation_id (int): 予約ID
 
     Returns:
-        int: 予約の件数
+        Reservation | None: 見つかった予約。なければNone
     """
-    return db.query(func.count(Reservation.id)).scalar()
+    return db.get(Reservation, reservation_id)
 
 
 def get_confirmed_reservations(db: Session) -> list[Reservation]:
@@ -57,26 +81,28 @@ def get_latest_reservations(db: Session, limit: int) -> list[Reservation]:
     )
 
 
-def count_overlapping_reservations(db: Session, start: datetime, end: datetime) -> int:
+def count_overlapping_reservations(
+    db: Session, start: datetime, end: datetime, exclude_id: int | None = None
+) -> int:
     """[start, end)と時間が重なる確定済みの予約を数える
 
     Args:
         db (Session): DBのセッション
         start (datetime): 開始日時(UTC、タイムゾーンなし)
         end (datetime): 終了日時(UTC、タイムゾーンなし)
+        exclude_id (int | None): 数えない予約のID。予約を変更する時に、その予約自身を除くのに使う
 
     Returns:
         int: 重なる予約の件数
     """
-    return (
-        db.query(func.count(Reservation.id))
-        .filter(
-            Reservation.status == CONFIRMED,
-            Reservation.start_datetime < end,
-            Reservation.end_datetime > start,
-        )
-        .scalar()
+    query = db.query(func.count(Reservation.id)).filter(
+        Reservation.status == CONFIRMED,
+        Reservation.start_datetime < end,
+        Reservation.end_datetime > start,
     )
+    if exclude_id is not None:
+        query = query.filter(Reservation.id != exclude_id)
+    return query.scalar()
 
 
 def create_reservation(

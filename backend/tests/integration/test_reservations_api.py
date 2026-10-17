@@ -1,5 +1,5 @@
 """/reservations、/admin/reservations、/historyの結合テスト"""
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -163,6 +163,15 @@ def test_get_admin_reservations_instagram_id(admin_client: TestClient):
     assert response.json()["reservations"][0]["instagram_id"] == "barber151"
 
 
+def test_get_admin_reservations_phone_number(admin_client: TestClient):
+    # 管理用は、電話番号も数字だけの形で返す
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", phone_number="090-1234-5678")
+
+    response = admin_client.get("/admin/reservations")
+
+    assert response.json()["reservations"][0]["phone_number"] == "09012345678"
+
+
 def test_get_admin_reservations(admin_client: TestClient):
     # 管理用は、メニュー名とお客様の名前もつけて返す
     reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="フルコース")
@@ -173,14 +182,189 @@ def test_get_admin_reservations(admin_client: TestClient):
     assert response.json() == {
         "reservations": [
             {
+                "id": 1,
                 "start_datetime": "2026-10-12T01:00:00Z",
                 "end_datetime": "2026-10-12T02:00:00Z",
+                "menu_id": menu_id_of("フルコース"),
                 "menu_name": "フルコース",
                 "customer_name": "山田",
                 "instagram_id": None,
+                "phone_number": "09000000000",
             }
         ]
     }
+
+
+def test_cancel_reservation(admin_client: TestClient, db: Session):
+    # 取り消すと一覧に出なくなり、同じ時間にまた予約できる。DBには残る
+    reserve(admin_client, "2026-10-12T01:00:00.000Z")
+
+    response = admin_client.delete("/admin/reservations/1")
+
+    assert response.status_code == 204
+    assert admin_client.get("/admin/reservations").json() == {"reservations": []}
+    assert admin_client.get("/reservations").json() == {"reservations": []}
+    assert db.get(Reservation, 1).status == "cancelled"
+    assert reserve(admin_client, "2026-10-12T01:00:00.000Z").status_code == 200
+
+
+def test_cancel_reservation_not_found(admin_client: TestClient):
+    # ない予約や、取り消し済みの予約は取り消せない
+    reserve(admin_client, "2026-10-12T01:00:00.000Z")
+    admin_client.delete("/admin/reservations/1")
+
+    for reservation_id in [1, 999]:
+        response = admin_client.delete(f"/admin/reservations/{reservation_id}")
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": "予約が見つかりません。"}
+
+
+def test_cancel_reservation_requires_token(client: TestClient, db: Session):
+    # トークンがないと取り消せない
+    reserve(client, "2026-10-12T01:00:00.000Z")
+
+    response = client.delete("/admin/reservations/1")
+
+    assert response.status_code == 401
+    assert db.get(Reservation, 1).status == "confirmed"
+
+
+def test_change_reservation_menu(admin_client: TestClient, db: Session):
+    # メニューを変えると、所要時間に合わせて終了時刻も変わる
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="カット")
+
+    response = admin_client.patch("/admin/reservations/1", json={"menu_id": menu_id_of("パンチパーマ")})
+
+    assert response.status_code == 200
+    assert response.json()["menu_name"] == "パンチパーマ"
+    assert response.json()["end_datetime"] == "2026-10-12T04:00:00Z"
+    reservation = db.get(Reservation, 1)
+    assert reservation.menu_id == menu_id_of("パンチパーマ")
+    assert reservation.end_datetime.isoformat() == "2026-10-12T04:00:00"
+
+
+def test_change_reservation_menu_overlap(admin_client: TestClient, db: Session):
+    # 長くして次の予約と重なる時は変えない。ちょうど次の予約の前までなら変えられる
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="カット")
+    reserve(admin_client, "2026-10-12T03:00:00.000Z", menu_name="カット")
+
+    overlapped = admin_client.patch("/admin/reservations/1", json={"menu_id": menu_id_of("パンチパーマ")})
+    adjacent = admin_client.patch("/admin/reservations/1", json={"menu_id": menu_id_of("カラー")})
+
+    assert overlapped.status_code == 409
+    assert overlapped.json() == {"detail": "このあと予約している人がいるため延長できません。"}
+    assert adjacent.status_code == 200
+    assert db.get(Reservation, 1).end_datetime.isoformat() == "2026-10-12T03:00:00"
+
+
+def test_change_reservation_menu_shorter(admin_client: TestClient):
+    # 短くするのは、自分自身と重なっていても変えられる
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", menu_name="パンチパーマ")
+
+    response = admin_client.patch("/admin/reservations/1", json={"menu_id": menu_id_of("カット")})
+
+    assert response.status_code == 200
+    assert response.json()["end_datetime"] == "2026-10-12T02:00:00Z"
+
+
+def test_change_reservation_menu_invalid(admin_client: TestClient):
+    # ない予約や、ないメニューには変えられない
+    reserve(admin_client, "2026-10-12T01:00:00.000Z")
+
+    assert admin_client.patch("/admin/reservations/999", json={"menu_id": 1}).status_code == 404
+    assert admin_client.patch("/admin/reservations/1", json={"menu_id": 999}).status_code == 400
+
+
+def test_change_reservation_menu_requires_token(client: TestClient):
+    # トークンがないと変えられない
+    reserve(client, "2026-10-12T01:00:00.000Z")
+
+    assert client.patch("/admin/reservations/1", json={"menu_id": 1}).status_code == 401
+
+
+def test_change_reservation_contacts(admin_client: TestClient, db: Session):
+    # 連絡先は予約した時と同じ形に整えて保存する
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", phone_number="09000000000")
+
+    response = admin_client.patch(
+        "/admin/reservations/1/contacts", json={"instagram_id": "@new_id", "phone_number": "080-1111-2222"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["instagram_id"] == "new_id"
+    assert response.json()["phone_number"] == "08011112222"
+    reservation = db.get(Reservation, 1)
+    assert (reservation.instagram_id, reservation.phone_number) == ("new_id", "08011112222")
+
+
+def test_change_reservation_contacts_clear_one(admin_client: TestClient, db: Session):
+    # どちらかが残っていれば、もう片方は消せる
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", instagram_id="barber", phone_number="09000000000")
+
+    response = admin_client.patch(
+        "/admin/reservations/1/contacts", json={"instagram_id": "barber", "phone_number": ""}
+    )
+
+    assert response.status_code == 200
+    assert db.get(Reservation, 1).phone_number is None
+
+
+@pytest.mark.parametrize(
+    "contacts, detail",
+    [
+        ({"instagram_id": "", "phone_number": " "}, "Instagram ID または 電話番号のどちらかを入力してください。"),
+        ({"instagram_id": None, "phone_number": "090-1234-567"}, "電話番号は数字11桁で入力してください。"),
+        (
+            {"instagram_id": "バーバー", "phone_number": "09000000000"},
+            "Instagram IDは英数字・ピリオド・アンダースコアの30文字以内で入力してください。",
+        ),
+    ],
+)
+def test_change_reservation_contacts_invalid(admin_client: TestClient, db: Session, contacts, detail):
+    # 予約した時と同じルールに合わない時は変えない
+    reserve(admin_client, "2026-10-12T01:00:00.000Z", phone_number="09000000000")
+
+    response = admin_client.patch("/admin/reservations/1/contacts", json=contacts)
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": detail}
+    assert db.get(Reservation, 1).phone_number == "09000000000"
+
+
+def test_change_reservation_contacts_errors(client: TestClient, admin_client: TestClient):
+    # ない予約は404、トークンがないと401
+    reserve(client, "2026-10-12T01:00:00.000Z")
+    body = {"phone_number": "09000000000"}
+
+    assert admin_client.patch("/admin/reservations/999/contacts", json=body).status_code == 404
+    client.headers.pop("Authorization")
+    assert client.patch("/admin/reservations/1/contacts", json=body).status_code == 401
+
+
+def test_change_reservation_name(admin_client: TestClient, db: Session):
+    # 名前を書き換える。前後の空白は取り除く
+    reserve(admin_client, "2026-10-12T01:00:00.000Z")
+
+    response = admin_client.patch("/admin/reservations/1/name", json={"customer_name": " 山田 花子　"})
+
+    assert response.status_code == 200
+    assert response.json()["customer_name"] == "山田 花子"
+    assert db.get(Reservation, 1).customer_name == "山田 花子"
+
+
+def test_change_reservation_name_errors(client: TestClient, admin_client: TestClient, db: Session):
+    # 空の名前は400、ない予約は404、トークンがないと401。どれも変えない
+    reserve(client, "2026-10-12T01:00:00.000Z")
+
+    blank = admin_client.patch("/admin/reservations/1/name", json={"customer_name": "　"})
+
+    assert blank.status_code == 400
+    assert blank.json() == {"detail": "お名前を入力してください。"}
+    assert admin_client.patch("/admin/reservations/999/name", json={"customer_name": "a"}).status_code == 404
+    client.headers.pop("Authorization")
+    assert client.patch("/admin/reservations/1/name", json={"customer_name": "a"}).status_code == 401
+    assert db.get(Reservation, 1).customer_name == "山田"
 
 
 def test_get_history(admin_client: TestClient):
@@ -217,7 +401,7 @@ def test_admin_token_not_set(admin_client: TestClient, monkeypatch):
 
 
 def test_seed_demo_reservations(db: Session):
-    # 定休日(月・火)を除いた日に、重ならないダミーの予約を入れる。2回目は何もしない
+    # 定休日(月・火)を除いた日に、重ならないダミーの予約を入れる。2回目は入れ直すので、件数は変わらない
     reservation_service.seed_demo_reservations(db)
     reservations = db.query(Reservation).order_by(Reservation.start_datetime).all()
 
@@ -229,9 +413,39 @@ def test_seed_demo_reservations(db: Session):
         assert 8 <= start_jst.hour and end_jst.hour <= 20
     for before, after in zip(reservations, reservations[1:]):
         assert before.end_datetime <= after.start_datetime
+    # お客様の名前とInstagramのIDは、DEMO_CUSTOMERSから順に使う
+    assert (reservations[0].customer_name, reservations[0].instagram_id) == reservation_service.DEMO_CUSTOMERS[0]
+    for name, instagram_id in reservation_service.DEMO_CUSTOMERS:
+        assert reservation_service.INSTAGRAM_ID_PATTERN.fullmatch(instagram_id)
 
     reservation_service.seed_demo_reservations(db)
     assert db.query(Reservation).count() == len(reservations)
+
+
+def test_seed_demo_reservations_replaces_all(client: TestClient, db: Session):
+    # 入れ直す時は、今ある予約をすべて消す
+    reserve(client, "2026-10-12T01:00:00.000Z")
+
+    reservation_service.seed_demo_reservations(db)
+
+    assert db.query(Reservation).filter(Reservation.customer_name == "山田").count() == 0
+
+
+def test_demo_reservations_expire(client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch):
+    # デモ中に作った予約は5分たったら消え、同じ時間にまた予約できる。ダミーの予約は消えない
+    start = datetime(2026, 10, 12, 12, 0)
+    monkeypatch.setattr(reservation_service, "now_utc", lambda: start)
+    reservation_service.seed_demo_reservations(db)
+    demo_count = db.query(Reservation).count()
+    monkeypatch.setattr(reservation_service, "now_utc", lambda: start + timedelta(minutes=1))
+    reserve(client, "2030-01-08T01:00:00.000Z")
+
+    monkeypatch.setattr(reservation_service, "now_utc", lambda: start + timedelta(minutes=5))
+    assert len(client.get("/reservations").json()["reservations"]) == demo_count + 1
+
+    monkeypatch.setattr(reservation_service, "now_utc", lambda: start + timedelta(minutes=6))
+    assert len(client.get("/reservations").json()["reservations"]) == demo_count
+    assert reserve(client, "2030-01-08T01:00:00.000Z").status_code == 200
 
 
 @pytest.mark.parametrize("phone_number", ["09012345678", "090-1234-5678", "090 1234 5678", "０９０－１２３４－５６７８"])
