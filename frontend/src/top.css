@@ -120,7 +120,43 @@ body {
   width: 100%;
 }
 
+/* 「工夫したこと」ボタン。SNSアイコンと同じ高さで、アイコンより左の空いている所の真ん中に置く
+   アイコンの並びの幅は 24px × 4個 + 2rem(32px) × 3か所 = 192px なので、左の空きは (100% - 192px) / 2、その真ん中は / 4 */
+.reflection-btn {
+  position: absolute;
+  left: calc((100% - 192px) / 4);
+  /* アイコンの箱と同じ高さ・同じ位置にする（フッターは下から40px、アイコンの箱は24px） */
+  bottom: 40px;
+  height: 24px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  transform: translateX(-50%);
+  /* 横幅いっぱいのSNSアイコンのフッターが上に重なって押せなくなるので、手前に出す */
+  z-index: 1;
+  white-space: nowrap;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  padding: 0 0.75rem; /* 高さは24pxで決めているので、上下の余白は0 */
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ホバーした時は、BOOKINGボタンと同じく白い背景に黒い文字にする */
+.reflection-btn:hover {
+  opacity: 1;
+  background-color: #ffffff;
+  color: #000000;
+}
+
 .social-icon {
+  display: flex; /* 箱の高さをアイコン(24px)ちょうどにして、工夫したことボタンと高さを合わせやすくする */
   color: #ffffff;
   opacity: 0.7;
   transition: opacity 0.3s ease, transform 0.3s ease;
@@ -151,5 +187,14 @@ body {
   
   .social-footer {
     gap: 1.5rem;
+  }
+
+  /* スマホではアイコンの間が1.5rem(24px)になり、並びの幅は 24px × 4個 + 24px × 3か所 = 168px
+     空きが狭いので、重ならないように少し小さくする */
+  .reflection-btn {
+    left: calc((100% - 168px) / 4);
+    padding: 0 0.5rem;
+    font-size: 0.7rem;
+    letter-spacing: 0;
   }
 }

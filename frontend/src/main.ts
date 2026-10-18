@@ -1,6 +1,7 @@
 import * as inputs from "./form.ts"
 import { loadMenus } from "./modules/menu.ts"
-import { startTutorialOnLoad } from "./modules/tutorial.ts"
+import { startBookingTutorialOnLoad } from "./modules/bookingTutorial.ts"
+import { setupReflectionButton } from "./modules/reflectionModal.ts"
 import { createReservation, fetchReservations } from "./services/apiClient.ts"
 import type { MenuInfo, Reservation, ReservationSlot, SlotStatus, Step } from "./types/index.ts"
 // ==========================================
@@ -597,6 +598,9 @@ backToHomeBtn.addEventListener('click', () => {
   updateNextBtnState();
 });
 
+// フッターの「工夫したこと」ボタン
+setupReflectionButton(document.getElementById('reflection-btn'));
+
 document.addEventListener('DOMContentLoaded', () => {
   updateStickyHeaderOffset();
   updateNextBtnState(); // 初期ロード時の状態をセット
@@ -607,6 +611,6 @@ loadMenus().then((menus: MenuInfo[]) => {
   menuData = Object.fromEntries(menus.map((menu: MenuInfo) => [String(menu.id), menu]));
   updateNextBtnState();
   // メニューカードを光らせるので、描画が終わってから表示する
-  startTutorialOnLoad();
+  startBookingTutorialOnLoad();
 });
 loadAndRenderSchedule();
