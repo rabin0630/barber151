@@ -1,0 +1,76 @@
+/* 「工夫したこと」モーダル。トップページと予約画面の両方で使うので、別のファイルにしている */
+.reflection-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.reflection-modal-content {
+  width: 100%;
+  max-width: 520px;
+  max-height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  /* トップページはCinzelなので、読みやすいように普通のフォントに戻す */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #111827;
+  text-align: left;
+  letter-spacing: normal;
+}
+
+.reflection-modal-title {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.reflection-section + .reflection-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.reflection-section h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #2563eb;
+}
+
+.reflection-body {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.reflection-body ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.reflection-modal-close-btn {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 1.5rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.reflection-modal-close-btn:hover {
+  background-color: #1d4ed8;
+}
