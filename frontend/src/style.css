@@ -671,3 +671,115 @@ input:user-invalid {
 input:user-invalid ~ .field-error {
   display: block;
 }
+
+/* ======== チュートリアル ======== */
+/* 大きな影で周りを暗くして、枠の中だけ明るく見せる */
+.tutorial-spotlight {
+  position: fixed;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  outline: 3px solid #2563eb;
+  z-index: 3001;
+  pointer-events: none;
+  transition: top 0.43s, left 0.43s, width 0.43s, height 0.43s; /* 0.3sの0.7倍速 */
+}
+
+.tutorial-tooltip {
+  position: fixed;
+  width: min(320px, calc(100vw - 32px));
+  box-sizing: border-box;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 3002;
+  transition: top 0.43s, left 0.43s; /* 光る枠と同じ速さで動かす */
+}
+
+.tutorial-count {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.tutorial-title {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1.1rem;
+  color: #2563eb;
+}
+
+.tutorial-text {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #111827;
+}
+
+.tutorial-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* 吹き出しの上の段。戻るは左上、ステップ数は右上に置く */
+.tutorial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tutorial-back-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.tutorial-back-btn:hover,
+.tutorial-skip-btn:hover {
+  color: #111827;
+}
+
+/* 自動入力ボタン。吹き出しの左下に出す */
+.tutorial-autofill-btn {
+  margin-right: auto;
+  background-color: #ffffff;
+  color: #2563eb;
+  border: 1px solid #2563eb;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.tutorial-autofill-btn:hover {
+  background-color: #eff6ff;
+}
+
+.tutorial-skip-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.tutorial-next-btn {
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.tutorial-next-btn:hover {
+  background-color: #1d4ed8;
+}

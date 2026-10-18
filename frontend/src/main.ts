@@ -1,5 +1,6 @@
 import * as inputs from "./form.ts"
 import { loadMenus } from "./modules/menu.ts"
+import { startTutorialOnLoad } from "./modules/tutorial.ts"
 import { createReservation, fetchReservations } from "./services/apiClient.ts"
 import type { MenuInfo, Reservation, ReservationSlot, SlotStatus, Step } from "./types/index.ts"
 // ==========================================
@@ -436,7 +437,7 @@ footerBackBtn.addEventListener('click', () => {
     indicatorStep2.classList.remove('active');
     indicatorStep1.classList.add('active');
 
-    footerNextBtn.textContent = '日時選択へ';
+    footerNextBtn.textContent = '日時確認へ';
     footerBackBtn.style.visibility = 'hidden'; // Step1では戻るボタンを非表示
     currentStep = 1;
 
@@ -605,5 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
 loadMenus().then((menus: MenuInfo[]) => {
   menuData = Object.fromEntries(menus.map((menu: MenuInfo) => [String(menu.id), menu]));
   updateNextBtnState();
+  // メニューカードを光らせるので、描画が終わってから表示する
+  startTutorialOnLoad();
 });
 loadAndRenderSchedule();

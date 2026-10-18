@@ -87,6 +87,30 @@ body {
   opacity: 1;
 }
 
+/* 使い方ボタンはSNSアイコンのフッターの上に置く */
+.tutorial-link {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: #ffffff;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 0.6rem 2rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 1px; /* 日本語なので英字より詰める */
+  opacity: 0.8;
+  transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
+}
+
+.tutorial-link:hover {
+  background-color: #ffffff;
+  color: #000000;
+  opacity: 1;
+}
+
 .social-footer {
   position: absolute;
   bottom: 40px;
@@ -118,6 +142,11 @@ body {
   
   .main-menu li.booking a {
     padding: 0.8rem 2.5rem;
+  }
+
+  .tutorial-link {
+    font-size: 0.8rem;
+    padding: 0.5rem 1.5rem;
   }
   
   .social-footer {
