@@ -68,11 +68,11 @@ const findEarliestSlot = (): HTMLElement | null => {
 const STEPS: TutorialStep[] = [
   {
     title: 'はじめまして！',
-    text: 'ポートフォリオを見てくれてありがとうございます。ソトといいます。このサイトの使い方をこれから教えますね！',
+    text: 'ポートフォリオをご覧いただき、ありがとうございます。ソトと申します。これから、このサイトの使い方をご案内します！',
     restore: backToScreen(1),
   },
   {
-    text: `このチュートリアルでわかることは2つです
+    text: `このチュートリアルでわかることは2つです。
       <ol class="tutorial-goals">
         <li><strong>このアプリの使い方</strong><span class="tutorial-goal-time">約2分</span></li>
         <li><strong>アプリで工夫したこと、これからの課題</strong><span class="tutorial-goal-time">約1分</span></li>
@@ -83,41 +83,41 @@ const STEPS: TutorialStep[] = [
   {
     selector: '.step-indicator',
     title: '予約は3ステップ',
-    text: '予約は「メニュー選択 → 日時選択 → 内容確認」の3ステップだよ。',
+    text: '予約は「メニュー選択 → 日時選択 → 内容確認」の3ステップです。',
     restore: backToScreen(1),
   },
   {
     find: findPracticeMenuCard,
-    title: 'メニューを選ぼう',
-    text: `まずはメニューから。「${PRACTICE_MENU_NAME}」をタップしてみて！`,
+    title: 'メニューを選んでください',
+    text: `まずはメニューから。「${PRACTICE_MENU_NAME}」をタップしてみてください！`,
     restore: backToScreen(1),
     waitFor: 'change',
   },
   {
     selector: '#footer-next-btn',
-    title: '日時選択へ進もう',
-    text: 'いいね！「日時確認へ」を押して進もう。',
+    title: '日時選択へ進みましょう',
+    text: 'ありがとうございます！「日時確認へ」を押して進んでください。',
     restore: backToScreen(1),
     waitFor: 'click',
   },
   {
     find: findEarliestSlot,
-    title: '日時を選ぼう',
-    text: '「○」が空いている時間だよ。光っている一番早い「○」をタップしてみて！',
+    title: '日時を選んでください',
+    text: '「○」が空いている時間です。光っている一番早い「○」をタップしてみてください！',
     restore: backToScreen(2),
     waitFor: 'click',
   },
   {
     selector: '#footer-next-btn',
-    title: '内容確認へ進もう',
-    text: 'バッチリ！「内容確認へ」を押そう。',
+    title: '内容確認へ進みましょう',
+    text: 'ばっちりです！「内容確認へ」を押してください。',
     restore: backToScreen(2),
     waitFor: 'click',
   },
   {
     selector: '#step-3-confirm',
-    title: 'お名前と連絡先を入れよう',
-    text: '自分で入れてもいいし、「次へ」を押せばまとめて自動で入るよ！Instagram IDと電話番号は、どっちか1つあれば予約できるんだ。',
+    title: 'お名前と連絡先を入れてください',
+    text: 'ご自身で入力していただいても、「次へ」を押してまとめて自動入力していただいても大丈夫です！Instagram IDと電話番号は、どちらか1つあれば予約できます。',
     waitFor: 'input',
     fills: [
       { selector: '#customer-name', value: 'test' },
@@ -127,8 +127,8 @@ const STEPS: TutorialStep[] = [
   },
   {
     selector: '#footer-next-btn',
-    title: '予約を確定しよう',
-    text: '最後に「予約を確定する」を押してみて！',
+    title: '予約を確定しましょう',
+    text: '最後に「予約を確定する」を押してみてください！',
     waitFor: 'click',
     // 予約の送信が終わって完了画面が出てから次へ進む。失敗した時はこのステップのまま押し直せる
     nextWhen: () => (document.getElementById('success-container') as HTMLElement).style.display !== 'none',
@@ -136,13 +136,13 @@ const STEPS: TutorialStep[] = [
   {
     selector: '#success-container',
     title: '予約完了！',
-    text: 'これで予約完了！おつかれさま！',
+    text: 'これで予約完了です！お疲れさまでした！',
     noBack: true,
   },
   {
     selector: '.header-nav a[href="admin.html"]',
-    title: '管理者画面へ行こう',
-    text: '次は、お店側で今の予約がどう見えるか見てみよう！上の「管理者画面」を押してね。',
+    title: '管理者画面へ移りましょう',
+    text: '次は、今の予約がお店側でどう見えるかをご覧ください！上の「管理者画面」を押してください。',
     waitFor: 'click',
     // 管理者画面でもチュートリアルの続きを始めるよう、移動する前にリンク先に目印を付ける
     onDone: (target: HTMLElement) => {

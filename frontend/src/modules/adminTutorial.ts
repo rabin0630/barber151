@@ -45,47 +45,47 @@ const USAGE_STEPS: TutorialStep[] = [
   {
     selector: '#admin-login-token',
     title: '管理者画面へようこそ！',
-    text: `ここからはお店側の画面だよ。ポートフォリオ用に、パスワードは「${DEMO_PASSWORD}」にしてあるよ。入れてみて！`,
+    text: `ここからはお店側の画面です。ポートフォリオ用に、パスワードは「${DEMO_PASSWORD}」にしてあります。入力してみてください！`,
     waitFor: 'input',
     fillValue: DEMO_PASSWORD,
   },
   {
     selector: '#admin-login-submit-btn',
-    title: '管理者画面に入ろう',
-    text: '「入る」を押してね。',
+    title: '管理者画面に入りましょう',
+    text: '「入る」を押してください。',
     waitFor: 'click',
     // 予約一覧を読み込み終わってから次へ進む
     nextWhen: () => (document.getElementById('admin-main') as HTMLElement).dataset.loaded === 'true',
   },
   {
     find: findPracticeReservation,
-    title: 'さっきの予約を見てみよう',
-    text: 'これが予約一覧だよ。さっき予約した「test」さんがここにいるよ！タップしてみて。',
+    title: '先ほどの予約を見てみましょう',
+    text: 'これが予約一覧です。先ほど予約した「test」さんがここにいます！タップしてみてください。',
     restore: closeContactModal,
     waitFor: 'click',
   },
   {
     selector: '#admin-contact-modal .modal-content',
     title: 'お客様の詳細',
-    text: '名前や電話番号を押すと、書き換えたり、電話やInstagramで連絡したりできるよ。予約の取り消しやドタキャンの記録もここでできるんだ。',
+    text: '名前や電話番号を押すと、書き換えたり、電話やInstagramで連絡したりできます。予約の取り消しやドタキャンの記録もここでできます。',
     restore: openContactModal,
   },
   {
     selector: '#contact-close-btn',
-    title: '一覧に戻ろう',
-    text: '「閉じる」を押してね。',
+    title: '一覧に戻りましょう',
+    text: '「閉じる」を押してください。',
     restore: openContactModal,
     waitFor: 'click',
   },
   {
     selector: '#schedule-body .clickable-cell',
     title: '電話予約の追加',
-    text: '「＋」の枠を押すと、電話でもらった予約を追加できるよ。',
+    text: '「＋」の枠を押すと、電話で受けた予約を追加できます。',
   },
   {
     selector: '#menu-manager-wrapper',
     title: 'メニュー管理',
-    text: 'メニューの追加・変更・削除はここ。保存すると予約画面にすぐ反映されるよ。',
+    text: 'メニューの追加・変更・削除はここで行います。保存すると予約画面にすぐ反映されます。',
   },
 ];
 
@@ -102,7 +102,7 @@ const REFLECTION_STEPS: TutorialStep[] = [
   ...REFLECTIONS.map((reflection: Reflection): TutorialStep => ({ title: reflection.title, text: reflection.html })),
   {
     title: 'ありがとうございました！',
-    text: '最後まで見てくれて、本当にありがとうございました！',
+    text: '最後までご覧いただき、本当にありがとうございました！',
   },
 ];
 
