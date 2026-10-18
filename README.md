@@ -6,6 +6,9 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg)
 ![AWS](https://img.shields.io/badge/AWS-EC2-FF9900.svg)
 
+<img width="1980" height="1080" alt="hero-barber" src="https://github.com/user-attachments/assets/6fbe1fc5-ac8d-4cfc-9d49-17c93c98bd9e" />
+
+
 理容室の Web 予約システムです。お客様はスマホからメニューと空いている日時を選ぶだけで予約でき、お店は管理画面で予約を見たり、お客様に連絡したりできます。
 
 <!-- TODO: スクリーンショット(予約画面・管理画面) -->
