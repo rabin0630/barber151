@@ -1,5 +1,13 @@
 # nginxの起動時に${DOMAIN}が置き換えられ、/etc/nginx/conf.d/default.confになる
 
+# パスごとのCache-Control
+# /assets/はViteがファイル名にハッシュをつけるので、1年キャッシュしてよい
+# それ以外(HTMLや/images/など)は同じ名前のまま中身が変わるので、使う前に毎回サーバーに確認させる(変わっていなければ304)
+map $uri $cache_control {
+    ~^/assets/  "public, max-age=31536000, immutable";
+    default     "no-cache";
+}
+
 # HTTP: 証明書の更新(certbot)に使い、それ以外はHTTPSに転送する
 server {
     listen 80;
@@ -26,6 +34,8 @@ server {
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    # locationの中にadd_headerを書くと、ここのadd_headerがそのlocationで全部消えるので、ヘッダーはここだけで付ける
+    add_header Cache-Control $cache_control;
 
     root /usr/share/nginx/html;
 
@@ -36,12 +46,6 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Viteがファイル名にハッシュをつけるので、長くキャッシュしてよい
-    location /assets/ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
     }
 
     # /bookingでもbooking.htmlを返す

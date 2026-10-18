@@ -18,7 +18,7 @@ GHCR のパッケージは最初は非公開。EC2 で `docker login ghcr.io`(`r
 
 ## 管理用API
 
-次のAPIは `Authorization: Bearer <ADMIN_TOKEN>` がないと 401 を返す。管理画面(`/admin`)を開くとトークンを聞かれる。
+次のAPIは `Authorization: Bearer <ADMIN_TOKEN>` がないと 401 を返す。管理画面(`/admin`)を開くとパスワード(`ADMIN_TOKEN` の値)を聞かれる。ポートフォリオのデモでは `test` にして公開している。
 
 - `POST /menus`、`PUT /menus/{id}`、`DELETE /menus/{id}`
 - `GET /admin/reservations`(お客様の名前つきの予約)

@@ -1,5 +1,6 @@
 import { loadMenuManager } from './modules/adminMenu.ts';
 import { setupPhoneNumberInput } from './modules/phoneNumber.ts';
+import { startAdminTutorialOnLoad } from './modules/adminTutorial.ts';
 import { cancelReservation, changeReservationContacts, changeReservationMenu, changeReservationName, createReservation, fetchAdminReservations, fetchHistory, getAdminToken, saveAdminToken, verifyAdminToken } from './services/apiClient.ts';
 
 import type { AdminReservation, HistoryItem, ReservationItem } from './types/index.ts';
@@ -57,6 +58,8 @@ async function loadAndRenderSchedule(): Promise<void> {
     console.error('予約データの取得に失敗しました', e);
   }
   renderSchedule(currentStartDate);
+  // チュートリアルが、予約一覧を読み込み終わったか確かめるのに使う
+  adminMain.dataset.loaded = 'true';
   loadHistory(); // カレンダー描画と一緒に履歴も読み込む
 }
 
@@ -65,7 +68,7 @@ async function loadHistory(): Promise<void> {
     renderHistory(await fetchHistory());
   } catch (e: unknown) {
     console.error('履歴データの取得に失敗しました', e);
-    // トークンが違う時などに気づけるよう、エラーを画面にも出す
+    // パスワードが違う時などに気づけるよう、エラーを画面にも出す
     const historyList = document.getElementById('history-list') as HTMLUListElement;
     const li: HTMLLIElement = document.createElement('li');
     li.style.cssText = 'padding: 1rem; text-align: center; color: #991b1b;';
@@ -119,7 +122,8 @@ window.addEventListener('resize', () => {
   }
 });
 
-// 管理画面に入る時のトークン入力モーダル。予約や履歴は、トークンが正しいと確かめてから読み込む
+// 管理画面に入る時のパスワード入力モーダル。予約や履歴は、パスワードが正しいと確かめてから読み込む
+// パスワードはサーバーのADMIN_TOKENと同じ。ポートフォリオ用なので「test」にしてモーダルに書いている
 const loginModal = document.getElementById('admin-login-modal') as HTMLDivElement;
 const loginForm = document.getElementById('admin-login-form') as HTMLFormElement;
 const loginTokenInput = document.getElementById('admin-login-token') as HTMLInputElement;
@@ -130,11 +134,11 @@ const adminMain = document.getElementById('admin-main') as HTMLElement;
 const adminFooter = document.getElementById('admin-footer') as HTMLElement;
 
 // モーダルを閉じて管理画面の中身を表示し、予約と履歴を読み込む
-function enterAdmin(): void {
+async function enterAdmin(): Promise<void> {
   loginModal.style.display = 'none';
   adminMain.style.display = '';
   adminFooter.style.display = '';
-  loadAndRenderSchedule();
+  await loadAndRenderSchedule();
 }
 
 function showLoginError(message: string): void {
@@ -158,24 +162,24 @@ loginForm.addEventListener('submit', async (e: SubmitEvent) => {
       enterAdmin();
       return;
     }
-    showLoginError('トークンが正しくありません。');
+    showLoginError('パスワードが正しくありません。');
     loginTokenInput.select();
   } catch (error: unknown) {
-    showLoginError(error instanceof Error ? error.message : 'トークンの確認に失敗しました。');
+    showLoginError(error instanceof Error ? error.message : 'パスワードの確認に失敗しました。');
   } finally {
     loginSubmitBtn.textContent = '入る';
     loginSubmitBtn.disabled = false;
   }
 });
 
-// このタブで一度入っていれば、保存したトークンを確かめて、モーダルを出さずに入る
+// このタブで一度入っていれば、保存したパスワードを確かめて、モーダルを出さずに入る
 // 確かめている間はモーダルも出さない(一瞬モーダルが見えてしまうのを防ぐ)
 async function restoreLogin(): Promise<void> {
   const savedToken: string = getAdminToken();
   if (savedToken) {
     try {
       if (await verifyAdminToken(savedToken)) {
-        enterAdmin();
+        await enterAdmin();
         return;
       }
     } catch {
@@ -186,7 +190,8 @@ async function restoreLogin(): Promise<void> {
   loginTokenInput.focus();
 }
 
-restoreLogin();
+// ログインの確認が終わってから、予約画面のチュートリアルの続きを始める
+restoreLogin().then(startAdminTutorialOnLoad);
 
 loadMenuManager();
 
