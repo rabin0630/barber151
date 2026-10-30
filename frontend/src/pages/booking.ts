@@ -70,16 +70,21 @@ let bookedReservations: Reservation[] = [];
 // ==========================================
 // 4. 関数
 // ==========================================
-/** --選択したメニューの値を取得する関数-- */
+/**
+ * 選択したメニューの値を取得する
+ *
+ * @return 選択したメニューのID(文字列)。未選択ならnull
+ */
 const getSelectedMenuValue = (): string | null => {
   const selectedRadio = document.querySelector('input[name="menu"]:checked') as HTMLInputElement | null;
   return selectedRadio ? selectedRadio.value : null;
 };
 
-/** ---サーバーから予約情報を取得しカレンダーを描画する---
- * 1. 予約情報の開始時刻と終了時刻を配列に格納する
- * 2. スケジュールを描写するのである
-*/
+/**
+ * サーバーから予約情報を取得し、カレンダーを描画する
+ *
+ * 取得に失敗した時は、コンソールにエラーを出し、手元の予約情報で描画する
+ */
 async function loadAndRenderSchedule(): Promise<void> {
   try {
     const reservations: ReservationSlot[] = await fetchReservations();
@@ -93,9 +98,7 @@ async function loadAndRenderSchedule(): Promise<void> {
   renderSchedule(currentStartDate);
 }
 
-/**
- * 必須項目が入力されているか確認し、次へ進むボタンを無効化/有効化する関数である
- */
+/** 必須項目が入力されているか確認し、次へ進むボタンを無効化/有効化する */
 const updateNextBtnState = (): void => {
   let isEnabled: boolean = false;
   if (currentStep === 1) {
@@ -115,9 +118,9 @@ const updateNextBtnState = (): void => {
 };
 
 /**
- * 選択したメニューを選択内容欄に表示する関数である
- * 1. 選択したメニューの表示
- * 2. 選択した予約日付の表示、時間計算
+ * 選択したメニューと予約日時を、選択内容欄に表示する
+ *
+ * 予約日時の欄には、メニューの所要時間から計算した終了時間も出す
  */
 const updateSummary = (): void => {
   /** ---1. 選択したメニューの表示--- */
@@ -145,8 +148,10 @@ const updateSummary = (): void => {
   }
 };
 
-/**スケジュールを描写する関数である
- * 第一引数にはスケジュール開始日を渡すのである
+/**
+ * startDateからdaysToShow日分の予約表を描画する
+ *
+ * @param startDate 表の最初の日
  */
 function renderSchedule(startDate: Date): void {
 
@@ -218,7 +223,13 @@ function renderSchedule(startDate: Date): void {
   }
 
   /** ---2. セルのレンダリング--- */
-  // 1枠単体が空いているか判定する関数
+  /**
+   * 1枠単体が空いているか判定する
+   *
+   * @param date 枠の日付
+   * @param startHour 枠の開始時刻(時)
+   * @return 枠の状態
+   */
   const getSlotStatus = (date: Date, startHour: number): SlotStatus => {
     const day: number = date.getDay();
     const slotStart: Date = new Date(date);
@@ -332,7 +343,7 @@ function renderSchedule(startDate: Date): void {
   requestAnimationFrame(() => updateStickyHeaderOffset());
 }
 
-// スクロール追従時のオフセット計算処理
+/** スクロール追従時のオフセットを計算する */
 function updateStickyHeaderOffset(): void {
   const stepIndicator = document.querySelector('.step-indicator') as HTMLElement | null;
   const menuInfo = document.querySelector('#selected-menu-info') as HTMLElement | null;

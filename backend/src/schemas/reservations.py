@@ -12,6 +12,21 @@ class UtcDatetimeModel(BaseModel):
 
     @field_serializer("*", when_used="json")
     def serialize_utc(self, value):
+        """タイムゾーンなしの日時を、UTCとして末尾にZを付けた文字列にする
+
+        タイムゾーンありの日時や、日時でない値はそのまま返す。
+
+        Args:
+            value (Any): フィールドの値
+
+        Returns:
+            Any: 変換した文字列。変換しない時は受け取った値
+
+        Examples:
+
+            >>> UtcDatetimeModel().serialize_utc(datetime(2026, 10, 12, 1, 0))
+            '2026-10-12T01:00:00Z'
+        """
         if isinstance(value, datetime) and value.tzinfo is None:
             return value.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
         return value

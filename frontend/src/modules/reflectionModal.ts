@@ -4,16 +4,27 @@ import { REFLECTIONS, type Reflection } from './reflections.ts';
 
 let modalEl: HTMLDivElement | null = null;
 
+/** モーダルを閉じる */
 const closeModal = (): void => {
   modalEl?.remove();
   modalEl = null;
   document.removeEventListener('keydown', closeOnEscape);
 };
 
+/**
+ * Escapeキーでモーダルを閉じる
+ *
+ * @param e キーボードのイベント
+ */
 function closeOnEscape(e: KeyboardEvent): void {
   if (e.key === 'Escape') closeModal();
 }
 
+/**
+ * モーダルを開く
+ *
+ * すでに開いている時は何もしない
+ */
 const openModal = (): void => {
   if (modalEl) return;
   modalEl = document.createElement('div');
@@ -40,7 +51,11 @@ const openModal = (): void => {
   (modalEl.querySelector('.reflection-modal-close-btn') as HTMLButtonElement).focus();
 };
 
-/** ボタンを押したら「工夫したこと」モーダルを開くようにする */
+/**
+ * ボタンを押したら「工夫したこと」モーダルを開くようにする
+ *
+ * @param button 「工夫したこと」ボタン。nullなら何もしない
+ */
 export function setupReflectionButton(button: HTMLElement | null): void {
   button?.addEventListener('click', openModal);
 }

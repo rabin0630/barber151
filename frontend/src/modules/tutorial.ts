@@ -77,14 +77,30 @@ const stopNextWhenTimer = (): void => {
 
 /**
  * 入力した値が見本と同じか比べる
+ *
  * 前後の空白、Instagramの先頭の@、電話番号のハイフンの有無は気にしない
+ *
+ * @param value 入力した値
+ * @param expected 見本の値
+ * @return 同じならtrue
  */
 const isSameInput = (value: string, expected: string): boolean => {
+  /**
+   * 比べるために値をそろえる
+   *
+   * @param v そろえる値
+   * @return そろえた値
+   */
   const normalize = (v: string): string => v.trim().replace(/^@/, '').replace(/[-\s]/g, '');
   return normalize(value) === normalize(expected);
 };
 
-/** 光らせる要素を探す。画面に表示されていない時（閉じているモーダルの中など）は null を返す */
+/**
+ * 光らせる要素を探す
+ *
+ * @param step ステップ
+ * @return 光らせる要素。画面に表示されていない時（閉じているモーダルの中など）はnull
+ */
 const getTarget = (step: TutorialStep): HTMLElement | null => {
   const target: HTMLElement | null = step.find
     ? step.find()
@@ -92,10 +108,21 @@ const getTarget = (step: TutorialStep): HTMLElement | null => {
   return target && target.getClientRects().length > 0 ? target : null;
 };
 
-/** 光らせる要素がない、画面の真ん中に出すステップか */
+/**
+ * 光らせる要素がない、画面の真ん中に出すステップか確かめる
+ *
+ * @param step ステップ
+ * @return 真ん中に出すステップならtrue
+ */
 const isCenterStep = (step: TutorialStep): boolean => !step.selector && !step.find;
 
-/** 入力してもらう入力欄と値の組を返す（fillValue なら光らせた入力欄1つ、fills なら複数） */
+/**
+ * 入力してもらう入力欄と値の組を返す
+ *
+ * @param step ステップ
+ * @param target 光らせる要素
+ * @return fillValue なら光らせた入力欄1つ、fills なら複数の組
+ */
 const getFields = (step: TutorialStep, target: HTMLElement | null): { input: HTMLInputElement; value: string }[] => {
   if (step.fills) {
     return step.fills.flatMap(({ selector, value }) => {
@@ -109,13 +136,23 @@ const getFields = (step: TutorialStep, target: HTMLElement | null): { input: HTM
   return [];
 };
 
-/** 入力欄がすべて見本と同じ値になっているか */
+/**
+ * 入力欄がすべて見本と同じ値になっているか確かめる
+ *
+ * @param fields 入力欄と見本の値の組
+ * @return すべて同じならtrue。組がない時はfalse
+ */
 const isAllFilled = (fields: { input: HTMLInputElement; value: string }[]): boolean =>
   fields.length > 0 && fields.every(({ input, value }) => isSameInput(input.value, value));
 
 /**
- * 操作待ちのステップが、もう操作済みか
+ * 操作待ちのステップが、もう操作済みか確かめる
+ *
  * 戻ってきた時は同じ操作をしても進めない（選び直しても変化がない）ので、「次へ」を出すのに使う
+ *
+ * @param step ステップ
+ * @param target 光らせる要素
+ * @return 操作済みならtrue
  */
 const isStepDone = (step: TutorialStep, target: HTMLElement): boolean => {
   if (step.waitFor === 'change') return target.querySelector('input:checked') !== null;
@@ -125,7 +162,10 @@ const isStepDone = (step: TutorialStep, target: HTMLElement): boolean => {
 
 /**
  * チュートリアル中は裏のボタンを押せないようにする
+ *
  * 吹き出しと、操作待ちのステップで光らせている要素だけは押せる
+ *
+ * @param e クリックのイベント
  */
 const blockClick = (e: MouseEvent): void => {
   // プログラムからのクリック（予約を確定するボタンが送信ボタンを押す処理など）は止めない
@@ -186,6 +226,8 @@ const updatePosition = (): void => {
 
 /**
  * index番目のステップを表示する
+ *
+ * @param index 表示するステップの番号
  * @param direction 進む時は1、戻る時は-1。対象がないステップを飛ばす向きに使う
  */
 const showStep = (index: number, direction: 1 | -1 = 1): void => {
@@ -206,7 +248,9 @@ const showStep = (index: number, direction: 1 | -1 = 1): void => {
   currentIndex = index;
   const step: TutorialStep = steps[index];
   const isLast: boolean = index === steps.length - 1;
+  /** 次のステップへ進む */
   const goNext = (): void => showStep(index + 1, 1);
+  /** 前のステップへ戻る */
   const goBack = (): void => showStep(index - 1, -1);
 
   // 戻ってきた時は、画面もこのステップの状態に戻す（例: 日時選択 → メニュー選択）
@@ -299,7 +343,11 @@ const showStep = (index: number, direction: 1 | -1 = 1): void => {
   (tooltipEl.querySelector('.tutorial-next-btn') as HTMLButtonElement).addEventListener('click', needsAction ? doActionForUser : goNext);
 
   if (step.waitFor === 'input' && target && fields.length > 0) {
-    // 全部の入力欄に見本と同じ値が入ったら次へ進む（inputイベントは光らせた範囲まで伝わってくる）
+    /**
+     * 全部の入力欄に見本と同じ値が入ったら次へ進む
+     *
+     * inputイベントは光らせた範囲まで伝わってくる
+     */
     const onInput = (): void => {
       if (isAllFilled(fields)) onDone();
     };
@@ -337,6 +385,7 @@ function showQuitConfirm(): void {
   document.body.append(confirmEl);
 }
 
+/** 「チュートリアルを本当に終了しますか？」のモーダルを閉じる */
 function hideQuitConfirm(): void {
   confirmEl?.remove();
   confirmEl = null;
@@ -360,7 +409,11 @@ function endTutorial(): void {
 
 /**
  * チュートリアルを表示する
+ *
+ * すでに表示中の時は何もしない
+ *
  * @param tutorialSteps 表示するステップ
+ * @param tutorialOptions 終わった時の処理や開始位置などの設定
  */
 export function startTutorial(tutorialSteps: TutorialStep[], tutorialOptions: TutorialOptions = {}): void {
   if (tooltipEl) return; // 表示中なら何もしない
@@ -386,8 +439,11 @@ export function startTutorial(tutorialSteps: TutorialStep[], tutorialOptions: Tu
 }
 
 /**
- * URLの ?tutorial= の値を取り出す（例: ?tutorial=1 なら '1'）。付いていない時は null
+ * URLの ?tutorial= の値を取り出す
+ *
  * 再読み込みでまた始まらないように、付いていたらURLから消しておく
+ *
+ * @return 値（例: ?tutorial=1 なら '1'）。付いていない時はnull
  */
 export function takeTutorialParam(): string | null {
   const url = new URL(window.location.href);
