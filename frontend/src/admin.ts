@@ -11,8 +11,11 @@ const prevBtns = document.querySelectorAll('.prev-schedule-btn') as NodeListOf<H
 const nextBtns = document.querySelectorAll('.next-schedule-btn') as NodeListOf<HTMLButtonElement>;
 const dateJumpInput = document.getElementById('date-jump') as HTMLInputElement | null;
 
+/** 表に表示する最初の日 */
 let currentStartDate: Date = new Date();
+/** 表に表示する日数。スマートフォンは3日、PCは7日 */
 let daysToShow: number = window.innerWidth <= 600 ? 3 : 7;
+/** サーバーから取得した予約の一覧 */
 let bookedReservations: AdminReservation[] = [];
 
 // 日付ジャンプの初期設定
@@ -35,7 +38,7 @@ if (dateJumpInput) {
   });
 }
 
-// APIの予約1件を、カレンダー描画用の形にする
+/** APIの予約1件を、カレンダー描画用の形にする */
 function toAdminReservation(r: ReservationItem): AdminReservation {
   return {
     id: r.id,
@@ -49,7 +52,7 @@ function toAdminReservation(r: ReservationItem): AdminReservation {
   };
 }
 
-// サーバーから予約情報を取得してカレンダーを描画する関数
+/** サーバーから予約情報を取得してカレンダーを描画する関数 */
 async function loadAndRenderSchedule(): Promise<void> {
   try {
     const reservations: ReservationItem[] = await fetchAdminReservations();
@@ -63,6 +66,7 @@ async function loadAndRenderSchedule(): Promise<void> {
   loadHistory(); // カレンダー描画と一緒に履歴も読み込む
 }
 
+/** 予約追加の履歴を取得して描画する。失敗した時は、エラーを履歴の欄に出す */
 async function loadHistory(): Promise<void> {
   try {
     renderHistory(await fetchHistory());
@@ -77,6 +81,7 @@ async function loadHistory(): Promise<void> {
   }
 }
 
+/** 予約追加の履歴を一覧に描画する */
 function renderHistory(history: HistoryItem[]): void {
   const historyList = document.getElementById('history-list') as HTMLUListElement;
   historyList.innerHTML = '';
@@ -133,7 +138,7 @@ const loginSubmitBtn = document.getElementById('admin-login-submit-btn') as HTML
 const adminMain = document.getElementById('admin-main') as HTMLElement;
 const adminFooter = document.getElementById('admin-footer') as HTMLElement;
 
-// モーダルを閉じて管理画面の中身を表示し、予約と履歴を読み込む
+/** モーダルを閉じて管理画面の中身を表示し、予約と履歴を読み込む */
 async function enterAdmin(): Promise<void> {
   loginModal.style.display = 'none';
   adminMain.style.display = '';
@@ -141,6 +146,7 @@ async function enterAdmin(): Promise<void> {
   await loadAndRenderSchedule();
 }
 
+/** ログインモーダルにエラーを表示する */
 function showLoginError(message: string): void {
   loginMessage.textContent = message;
   loginMessage.style.display = 'block';
@@ -172,8 +178,10 @@ loginForm.addEventListener('submit', async (e: SubmitEvent) => {
   }
 });
 
-// このタブで一度入っていれば、保存したパスワードを確かめて、モーダルを出さずに入る
-// 確かめている間はモーダルも出さない(一瞬モーダルが見えてしまうのを防ぐ)
+/**
+ * このタブで一度入っていれば、保存したパスワードを確かめて、モーダルを出さずに入る
+ * 確かめている間はモーダルも出さない(一瞬モーダルが見えてしまうのを防ぐ)
+ */
 async function restoreLogin(): Promise<void> {
   const savedToken: string = getAdminToken();
   if (savedToken) {
@@ -209,6 +217,7 @@ prevBtns.forEach((btn: HTMLButtonElement) => {
   });
 });
 
+/** startDateからdaysToShow日分の予約表を描画する。予約はカード、空き枠は「＋」、定休日と過ぎた時間は「-」にする */
 function renderSchedule(startDate: Date): void {
   if (dateJumpInput) {
     const startStr: string = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
@@ -259,7 +268,7 @@ function renderSchedule(startDate: Date): void {
     headerRow.appendChild(th);
   }
 
-  // 指定した日時から"開始する"予約データを返す関数
+  /** 指定した日時から"開始する"予約データを返す関数 */
   const getStartingReservation = (date: Date, hour: number): AdminReservation | null => {
     const slotStart: Date = new Date(date);
     slotStart.setHours(hour, 0, 0, 0);
@@ -352,6 +361,7 @@ const adminStatusMessage = document.getElementById('admin-status-message') as HT
 const adminSubmitBtn = document.getElementById('admin-submit-btn') as HTMLButtonElement;
 setupPhoneNumberInput(document.getElementById('admin-customer-phone') as HTMLInputElement);
 
+/** 電話予約を追加するモーダルを、押した枠の日時で開く */
 function openReservationModal(slotStart: Date): void {
   const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][slotStart.getDay()];
   modalDatetimeDisplay.textContent = `${slotStart.getMonth() + 1}/${slotStart.getDate()}(${dayOfWeek}) ${slotStart.getHours()}:00`;
@@ -423,12 +433,12 @@ const contactPhone = document.getElementById('contact-phone') as HTMLElement;
 const contactInstagram = document.getElementById('contact-instagram') as HTMLElement;
 const contactCloseBtn = document.getElementById('contact-close-btn') as HTMLButtonElement;
 
-// 電話番号を090-1234-5678の形にする。11桁でなければそのまま
+/** 電話番号を090-1234-5678の形にする。11桁でなければそのまま */
 function formatPhoneNumber(phoneNumber: string): string {
   return phoneNumber.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
 }
 
-// 連絡先の値のボタン。押すと編集モーダルを開く。値がなければ「未登録」と出す
+/** 連絡先の値のボタン。押すと編集モーダルを開く。値がなければ「未登録」と出す */
 function createContactValueButton(text: string | null, kind: ContactKind): HTMLButtonElement {
   const button: HTMLButtonElement = document.createElement('button');
   button.type = 'button';
@@ -445,7 +455,7 @@ function createContactValueButton(text: string | null, kind: ContactKind): HTMLB
   return button;
 }
 
-// 連絡先モーダルの名前・電話番号・Instagramの欄を描く
+/** 連絡先モーダルの名前・電話番号・Instagramの欄を描く */
 function renderContactValues(res: AdminReservation): void {
   contactCustomerName.textContent = `${res.customerName} 様`;
   contactName.replaceChildren(createContactValueButton(res.customerName, 'name'));
@@ -453,15 +463,16 @@ function renderContactValues(res: AdminReservation): void {
   contactInstagram.replaceChildren(createContactValueButton(res.instagramId && `@${res.instagramId.replace(/^@/, '')}`, 'instagram'));
 }
 
-// 連絡先モーダルで開いている予約。取り消しの時に使う
+/** 連絡先モーダルで開いている予約。取り消しの時に使う */
 let contactReservation: AdminReservation | null = null;
 
-// 予約日時を「10/18(日) 10:00 〜 11:00」の形にする
+/** 予約日時を「10/18(日) 10:00 〜 11:00」の形にする */
 function formatReservationTime(res: AdminReservation): string {
   const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][res.start.getDay()];
   return `${res.start.getMonth() + 1}/${res.start.getDate()}(${dayOfWeek}) ${res.start.getHours()}:00 〜 ${res.end.getHours()}:00`;
 }
 
+/** 押した予約の連絡先モーダルを開く */
 function openContactModal(res: AdminReservation): void {
   contactReservation = res;
   contactDatetime.textContent = formatReservationTime(res);
@@ -473,8 +484,10 @@ function openContactModal(res: AdminReservation): void {
   contactCloseBtn.focus();
 }
 
-// メニューの選択肢で、予約の今のメニューを選んでおく
-// 削除済みのメニューは選択肢にないので、選べない選択肢として一時的に足す
+/**
+ * メニューの選択肢で、予約の今のメニューを選んでおく
+ * 削除済みのメニューは選択肢にないので、選べない選択肢として一時的に足す
+ */
 function selectContactMenu(res: AdminReservation): void {
   contactMenuSelect.querySelector('option[data-removed-menu]')?.remove();
   contactMenuSelect.value = String(res.menuId);
@@ -514,9 +527,10 @@ contactMenuSelect.addEventListener('change', async () => {
 
 // 名前・電話番号・Instagramの編集モーダル
 // 開いた時の値をsavedContactValueに置き、1文字打つたびに入力欄と比べて、違えば保存ボタンを出す
+/** 編集モーダルで編集する項目 */
 type ContactKind = 'name' | 'phone' | 'instagram';
 
-// 編集モーダルの見出し
+/** 編集モーダルの見出し */
 const CONTACT_EDIT_TITLES: Record<ContactKind, string> = { name: 'お名前', phone: '電話番号', instagram: 'Instagram' };
 
 const contactEditModal = document.getElementById('contact-edit-modal') as HTMLDivElement;
@@ -536,19 +550,22 @@ const contactEditInputs: Record<ContactKind, HTMLInputElement> = {
 };
 setupPhoneNumberInput(contactEditInputs.phone);
 
+/** 編集モーダルで開いている項目 */
 let contactEditKind: ContactKind = 'phone';
-// 編集モーダルを開いた時(保存した後)の値。入力欄と比べて、保存ボタンを出すか決める
+/** 編集モーダルを開いた時(保存した後)の値。入力欄と比べて、保存ボタンを出すか決める */
 let savedContactValue: string = '';
 
-// 保存してある値を、入力欄に出す形にする
+/** 保存してある値を、入力欄に出す形にする */
 function contactInputValue(res: AdminReservation, kind: ContactKind): string {
   if (kind === 'name') return res.customerName;
   if (kind === 'phone') return res.phoneNumber ? formatPhoneNumber(res.phoneNumber) : '';
   return res.instagramId ? res.instagramId.replace(/^@/, '') : '';
 }
 
-// 比べるために値をそろえる。名前は前後の空白を除く。電話番号は数字だけ(全角は半角に)、InstagramはIDだけにする
-// 例: "090-1234-5678" と "09012345678" は同じ、"@barber" と "barber" は同じとみなす
+/**
+ * 比べるために値をそろえる。名前は前後の空白を除く。電話番号は数字だけ(全角は半角に)、InstagramはIDだけにする
+ * 例: "090-1234-5678" と "09012345678" は同じ、"@barber" と "barber" は同じとみなす
+ */
 function normalizeContactValue(kind: ContactKind, value: string): string {
   if (kind === 'name') return value.trim();
   if (kind === 'phone') {
@@ -557,11 +574,12 @@ function normalizeContactValue(kind: ContactKind, value: string): string {
   return value.trim().replace(/^@/, '');
 }
 
+/** 項目の保存ボタンを返す */
 function saveButtonOf(kind: ContactKind): HTMLButtonElement {
   return contactEditFields[kind].querySelector('.contact-edit-save-btn') as HTMLButtonElement;
 }
 
-// 「電話する」「Instagramを開く」のリンクを、保存してある値で作る。名前の時は出さない
+/** 「電話する」「Instagramを開く」のリンクを、保存してある値で作る。名前の時は出さない */
 function renderContactEditAction(res: AdminReservation): void {
   contactEditAction.style.display = contactEditKind === 'name' ? 'none' : '';
   if (contactEditKind === 'phone') {
@@ -580,6 +598,7 @@ function renderContactEditAction(res: AdminReservation): void {
   }
 }
 
+/** 項目の編集モーダルを、保存してある値で開く */
 function openContactEdit(kind: ContactKind): void {
   if (!contactReservation) return;
   contactEditKind = kind;
@@ -598,7 +617,7 @@ function openContactEdit(kind: ContactKind): void {
   contactEditInputs[kind].focus();
 }
 
-// 戻る(✕): 保存していない入力は捨てて、連絡先モーダルに戻る
+/** 戻る(✕): 保存していない入力は捨てて、連絡先モーダルに戻る */
 function closeContactEdit(): void {
   contactEditModal.style.display = 'none';
 }
@@ -647,12 +666,14 @@ contactEditBackBtn.addEventListener('click', closeContactEdit);
   });
 });
 
+/** メニュー変更のエラーモーダルを閉じて、メニューの選択に戻る */
 function closeChangeMenuError(): void {
   changeMenuErrorModal.style.display = 'none';
   contactMenuSelect.focus();
 }
 changeMenuErrorCloseBtn.addEventListener('click', closeChangeMenuError);
 
+/** 連絡先モーダルを閉じる */
 function closeContactModal(): void {
   contactModal.style.display = 'none';
 }
@@ -674,8 +695,9 @@ const cancelConfirmYesBtn = document.getElementById('cancel-confirm-yes-btn') as
 const cancelDoneModal = document.getElementById('cancel-done-modal') as HTMLDivElement;
 const cancelDoneCloseBtn = document.getElementById('cancel-done-close-btn') as HTMLButtonElement;
 
-// 完了モーダルが自動で消えるまでの時間(ミリ秒)
+/** 完了モーダルが自動で消えるまでの時間(ミリ秒) */
 const CANCEL_DONE_TIMEOUT_MS = 5000;
+/** 完了モーダルを自動で閉じるタイマー */
 let cancelDoneTimer: number | undefined;
 
 // 確認モーダルを開く。連絡先モーダルは下に残しておく
@@ -689,7 +711,7 @@ contactCancelBtn.addEventListener('click', () => {
   cancelConfirmNoBtn.focus(); // 間違えてEnterを押しても消えないよう、いいえを選んでおく
 });
 
-// いいえ: 確認モーダルだけ閉じて、連絡先モーダルに戻る
+/** いいえ: 確認モーダルだけ閉じて、連絡先モーダルに戻る */
 function closeCancelConfirm(): void {
   cancelConfirmModal.style.display = 'none';
   contactCancelBtn.focus();
@@ -718,12 +740,14 @@ cancelConfirmYesBtn.addEventListener('click', async () => {
   loadAndRenderSchedule(); // 取り消した予約をカレンダーから消す
 });
 
+/** 完了モーダルを開く。一定時間たつと自動で閉じる */
 function openCancelDone(): void {
   cancelDoneModal.style.display = 'flex';
   cancelDoneCloseBtn.focus();
   cancelDoneTimer = window.setTimeout(closeCancelDone, CANCEL_DONE_TIMEOUT_MS);
 }
 
+/** 完了モーダルを閉じて、タイマーも止める */
 function closeCancelDone(): void {
   window.clearTimeout(cancelDoneTimer);
   cancelDoneModal.style.display = 'none';
