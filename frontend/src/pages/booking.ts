@@ -1,8 +1,8 @@
-import * as inputs from "./form.ts"
-import { loadMenus } from "./modules/menu.ts"
-import { setupReflectionButton } from "./modules/reflectionModal.ts"
-import { createReservation, fetchReservations } from "./services/apiClient.ts"
-import type { MenuInfo, Reservation, ReservationSlot, SlotStatus, Step } from "./types/index.ts"
+import * as inputs from "../modules/form.ts"
+import { loadMenus } from "../modules/menu.ts"
+import { setupReflectionButton } from "../modules/reflectionModal.ts"
+import { createReservation, fetchReservations } from "../services/apiClient.ts"
+import type { MenuInfo, Reservation, ReservationSlot, SlotStatus, Step } from "../types/index.ts"
 // ==========================================
 // 1. HTML DOM取得
 // ==========================================

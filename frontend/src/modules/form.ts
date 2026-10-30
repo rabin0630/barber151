@@ -1,4 +1,4 @@
-import { setupPhoneNumberInput } from './modules/phoneNumber.ts';
+import { setupPhoneNumberInput } from './phoneNumber.ts';
 
 /** 入力欄のお名前 */
 const name: HTMLInputElement = document.getElementById('customer-name') as HTMLInputElement;

@@ -1,8 +1,8 @@
-import { loadMenuManager } from './modules/adminMenu.ts';
-import { setupPhoneNumberInput } from './modules/phoneNumber.ts';
-import { cancelReservation, changeReservationContacts, changeReservationMenu, changeReservationName, createReservation, fetchAdminReservations, fetchHistory, getAdminToken, saveAdminToken, verifyAdminToken } from './services/apiClient.ts';
+import { loadMenuManager } from '../modules/adminMenu.ts';
+import { setupPhoneNumberInput } from '../modules/phoneNumber.ts';
+import { cancelReservation, changeReservationContacts, changeReservationMenu, changeReservationName, createReservation, fetchAdminReservations, fetchHistory, getAdminToken, saveAdminToken, verifyAdminToken } from '../services/apiClient.ts';
 
-import type { AdminReservation, HistoryItem, ReservationItem } from './types/index.ts';
+import type { AdminReservation, HistoryItem, ReservationItem } from '../types/index.ts';
 
 const headerRow = document.getElementById('schedule-header') as HTMLTableRowElement;
 const bodyElement = document.getElementById('schedule-body') as HTMLTableSectionElement;
