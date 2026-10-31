@@ -28,6 +28,8 @@ export type TutorialStep = {
   onDone?: (target: HTMLElement) => void;
   /** 「戻る」でこのステップに戻ってきた時に、画面をこのステップの状態に戻す */
   restore?: () => void;
+  /** 表示する前に呼ぶ。光らせる要素が見えるように、画面を切り替えたい時に使う（表の日付を送るなど） */
+  prepare?: () => void;
   /** 前のステップに戻れないようにする（予約を送ったあとなど、やり直せない時） */
   noBack?: boolean;
 };
@@ -209,6 +211,7 @@ const showStep = (index: number, direction: 1 | -1 = 1): void => {
 
   // 戻ってきた時は、画面もこのステップの状態に戻す（例: 日時選択 → メニュー選択）
   if (direction === -1) step.restore?.();
+  step.prepare?.();
 
   // 対象は画面の切り替えで作り直されることがあるので、表示する時に探す
   // メニューの取得に失敗した時や、もう閉じたモーダルの中など、対象がないステップは飛ばす

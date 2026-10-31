@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Barber - 予約</title>
+  <title>Barber - チュートリアル（予約画面）</title>
   <link rel="icon" type="image/png" href="/images/bandana_man.png">
   <link rel="stylesheet" href="/src/style.css">
   <!-- ロゴ(Barber)をトップページと同じCinzelにする -->
@@ -20,8 +20,8 @@
       <h1>Barber</h1>
     </a>
     <nav class="header-nav">
-      <a href="index.html" class="nav-link active">予約画面</a>
-      <a href="admin.html" class="nav-link">管理者画面</a>
+      <a href="tutorial-booking.html" class="nav-link active">予約画面</a>
+      <a href="tutorial-admin.html" class="nav-link">管理者画面</a>
     </nav>
   </header>
 
@@ -40,8 +40,43 @@
       <form id="reservation-form">
         <!-- Step 1: メニュー選択 -->
         <div id="step-1-menu" class="step-content active">
-
-        
+          <div class="menu-category" id="menu-category-cut">
+            <h3 class="category-title"><img src="/images/barbershop.png" class="category-icon" width="30" height="30" alt="">カット</h3>
+            <label class="menu-card" data-practice>
+              <input type="radio" name="menu" value="フルコース">
+              <div class="menu-details"><span class="menu-name">フルコース</span><span class="menu-price">6,000円</span></div>
+            </label>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="カット">
+              <div class="menu-details"><span class="menu-name">カット</span><span class="menu-price">4,000円</span></div>
+            </label>
+          </div>
+          <div class="menu-category" id="menu-category-perm">
+            <h3 class="category-title"><img src="/images/barber-chair.png" class="category-icon" width="30" height="30" alt="">パーマ</h3>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="濡れパン">
+              <div class="menu-details"><span class="menu-name">濡れパン</span><span class="menu-price">9,000円</span></div>
+            </label>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="パンチパーマ">
+              <div class="menu-details"><span class="menu-name">パンチパーマ</span><span class="menu-price">9,000円</span></div>
+            </label>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="ニグロ">
+              <div class="menu-details"><span class="menu-name">ニグロ</span><span class="menu-price">9,000円</span></div>
+            </label>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="極道パーマ">
+              <div class="menu-details"><span class="menu-name">極道パーマ</span><span class="menu-price">9,000円</span></div>
+            </label>
+          </div>
+          <div class="menu-category" id="menu-category-color">
+            <h3 class="category-title"><img src="/images/hairdresser.png" class="category-icon" width="30" height="30" alt="">カラー</h3>
+            <label class="menu-card">
+              <input type="radio" name="menu" value="カラー">
+              <div class="menu-details"><span class="menu-name">カラー</span><span class="menu-price">8,000円</span></div>
+            </label>
+          </div>
         </div>
 
         <!-- Step 2: 日時選択 -->
@@ -49,18 +84,18 @@
           <div id="selected-menu-info" class="selected-menu-info"
             style="padding: 1.5rem; background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px;">
             <p style="margin: 0 0 0.5rem 0; font-weight: bold; font-size: 1.1rem;">メニュー: <span id="step2-menu-name"
-                style="color: #2563eb;">-</span></p>
+                style="color: #2563eb;">フルコース</span></p>
             <p style="margin: 0 0 0.5rem 0; font-weight: bold; font-size: 1.1rem;">料金: <span id="step2-menu-price"
-                style="color: #2563eb;">-</span> 円(税込)</p>
+                style="color: #2563eb;">6,000</span> 円(税込)</p>
             <p style="margin: 0; font-weight: bold; font-size: 1.1rem;">施術予測時間: <span id="step2-menu-duration"
-                style="color: #2563eb;">-</span> 時間</p>
+                style="color: #2563eb;">1</span> 時間</p>
           </div>
           <div class="step2-header-sticky">
             <h2>日時を選択</h2>
             <div id="control-wrapper" class="control-wrapper">
               <div class="schedule-nav">
                 <button type="button" class="nav-btn prev-schedule-btn">←</button>
-                <input type="date" id="date-jump" class="date-jump-input">
+                <input type="date" id="date-jump" class="date-jump-input" value="2026-12-05">
                 <button type="button" class="nav-btn next-schedule-btn">→</button>
               </div>
             </div>
@@ -73,7 +108,6 @@
               </thead>
               <tbody id="schedule-body"></tbody>
             </table>
-            <input type="hidden" id="selected-datetime" required>
           </div>
         </div>
 
@@ -81,8 +115,8 @@
         <div id="step-3-confirm" class="step-content">
           <h2>内容確認</h2>
           <div id="selection-summary" class="selection-summary">
-            <p>メニュー: <span id="summary-menu" style="color: #2563eb;">未選択</span></p>
-            <p>日時: <span id="summary-datetime" style="color: #2563eb;">未選択</span></p>
+            <p>メニュー: <span id="summary-menu" style="color: #2563eb;">フルコース (6,000円)</span></p>
+            <p>日時: <span id="summary-datetime" style="color: #2563eb;">12月5日(土) 9:00~10:00</span></p>
           </div>
 
           <div class="form-group">
@@ -118,7 +152,7 @@
       <p style="text-align: center; margin-top: 1.5rem; margin-bottom: 2rem;">
         予約を完了しました。<br>この時間です：<br>
         <strong id="success-datetime"
-          style="font-size: 1.2rem; color: #2563eb; display: inline-block; margin-top: 0.5rem;"></strong>
+          style="font-size: 1.2rem; color: #2563eb; display: inline-block; margin-top: 0.5rem;">12月5日(土) 9:00~10:00</strong>
       </p>
       <button type="button" id="back-to-home-btn" class="submit-btn">ホームに戻る</button>
     </div>
@@ -142,9 +176,7 @@
     </div>
   </div>
 
-
-  <script type="module" src="/src/form.ts"></script>
-  <script type="module" src="/src/main.ts"></script>
+  <script type="module" src="/src/pages/tutorialBooking.ts"></script>
 </body>
 
 </html>

@@ -7,16 +7,30 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default defineConfig({
+  // HTMLはpages/に置く。rootにしておくと、URLとdistの配置は/booking.htmlのままになる
+  root: 'pages',
+  publicDir: '../public',
+  envDir: '..',
+  // HTMLの/src/...はrootの外にあるので、実際のsrc/に向ける
+  resolve: {
+    alias: { '/src': resolve(__dirname, 'src') },
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
+    // rootの外にあるsrc/を配信できるようにする
+    fs: { allow: ['..'] },
   }, // ← 元のコードでここにカンマが抜けていたため修正
   build: {
+    outDir: '../dist',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
-        booking: resolve(__dirname, 'booking.html'),
-        admin: resolve(__dirname, 'admin.html'),
+        main: resolve(__dirname, 'pages/index.html'),
+        booking: resolve(__dirname, 'pages/booking.html'),
+        admin: resolve(__dirname, 'pages/admin.html'),
+        tutorialBooking: resolve(__dirname, 'pages/tutorial-booking.html'),
+        tutorialAdmin: resolve(__dirname, 'pages/tutorial-admin.html'),
       },
     },
   },
