@@ -17,6 +17,8 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         booking: resolve(__dirname, 'booking.html'),
         admin: resolve(__dirname, 'admin.html'),
+        tutorialBooking: resolve(__dirname, 'tutorial-booking.html'),
+        tutorialAdmin: resolve(__dirname, 'tutorial-admin.html'),
       },
     },
   },

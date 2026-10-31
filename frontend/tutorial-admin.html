@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barber - チュートリアル（管理者画面）</title>
+  <link rel="icon" type="image/png" href="/images/bandana_man.png">
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="stylesheet" href="/src/admin.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="index.html">
+      <h1>Barber</h1>
+    </a>
+    <nav class="header-nav">
+      <a href="tutorial-booking.html" class="nav-link">予約画面</a>
+      <a href="tutorial-admin.html" class="nav-link active">管理者画面</a>
+    </nav>
+  </header>
+
+  <!-- 管理画面の中身。パスワードを入れるまで表示しない -->
+  <main id="admin-main" class="main-body" style="display: none;">
+    <div class="reservation-container" style="max-width: 900px;">
+      <h2>予約一覧（管理者用）</h2>
+      <div class="reservation-wrapper">
+        <div id="control-wrapper" class="control-wrapper">
+          <div class="schedule-nav">
+            <button type="button" class="nav-btn prev-schedule-btn">←</button>
+            <input type="date" id="date-jump" class="date-jump-input" value="2026-12-05">
+            <button type="button" class="nav-btn next-schedule-btn">→</button>
+          </div>
+        </div>
+        <p class="schedule-hint">👆 予約をタップすると、連絡先を見られます</p>
+        <div id="schedule-wrapper" class="schedule-wrapper">
+          <table id="schedule-table">
+            <thead>
+              <tr id="schedule-header-month"></tr>
+              <tr id="schedule-header">
+              </tr>
+            </thead>
+            <tbody id="schedule-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 履歴表示エリア -->
+      <div id="history-wrapper" style="margin-top: 2.5rem;">
+        <h3 style="margin-bottom: 1rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; color: #111827;">最近の予約追加履歴</h3>
+        <ul id="history-list" style="list-style: none; padding: 0; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+          <li style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.25rem;">
+              <span style="font-weight: bold; color: #111827; font-size: 1.05rem;">test 様</span>
+              <span style="font-size: 0.8rem; color: #6b7280;">11/30 12:00 に追加</span>
+            </div>
+            <div style="font-size: 0.9rem; color: #4b5563;">
+              予約日時: <span style="font-weight: 600;">12/5(土) 9:00</span> / メニュー: <span style="font-weight: 600;">フルコース</span>
+            </div>
+          </li>
+          <li style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.25rem;">
+              <span style="font-weight: bold; color: #111827; font-size: 1.05rem;">高橋 健太 様</span>
+              <span style="font-size: 0.8rem; color: #6b7280;">11/29 18:30 に追加</span>
+            </div>
+            <div style="font-size: 0.9rem; color: #4b5563;">
+              予約日時: <span style="font-weight: 600;">12/6(日) 10:00</span> / メニュー: <span style="font-weight: 600;">カラー</span>
+            </div>
+          </li>
+          <li style="padding: 1rem; ">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.25rem;">
+              <span style="font-weight: bold; color: #111827; font-size: 1.05rem;">佐藤 花子 様</span>
+              <span style="font-size: 0.8rem; color: #6b7280;">11/28 09:15 に追加</span>
+            </div>
+            <div style="font-size: 0.9rem; color: #4b5563;">
+              予約日時: <span style="font-weight: 600;">12/5(土) 13:00</span> / メニュー: <span style="font-weight: 600;">パンチパーマ</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- メニュー管理エリア -->
+      <div id="menu-manager-wrapper" style="margin-top: 2.5rem;">
+        <h3 style="margin-bottom: 1rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; color: #111827;">メニュー管理</h3>
+        <p style="font-size: 0.85rem; color: #6b7280; margin-top: 0;">名前・料金・所要時間を入力して「追加」「保存」を押すと、予約画面に反映されます。</p>
+        <div id="menu-manager">
+          <section class="menu-admin-category">
+            <h3 class="category-title"><img src="/images/barbershop.png" class="category-icon" width="30" height="30" alt="">カット</h3>
+            <div class="menu-row">
+              <input type="text" class="menu-row-name" value="フルコース" readonly>
+              <label class="menu-row-field"><input type="text" value="6000" readonly>円</label>
+              <label class="menu-row-field"><input type="text" value="1" readonly>時間</label>
+              <div class="menu-row-actions"><button type="button" class="menu-save-btn">保存</button><button type="button" class="menu-delete-btn">削除</button></div>
+            </div>
+            <div class="menu-row">
+              <input type="text" class="menu-row-name" value="カット" readonly>
+              <label class="menu-row-field"><input type="text" value="4000" readonly>円</label>
+              <label class="menu-row-field"><input type="text" value="1" readonly>時間</label>
+              <div class="menu-row-actions"><button type="button" class="menu-save-btn">保存</button><button type="button" class="menu-delete-btn">削除</button></div>
+            </div>
+          </section>
+          <section class="menu-admin-category">
+            <h3 class="category-title"><img src="/images/barber-chair.png" class="category-icon" width="30" height="30" alt="">パーマ</h3>
+            <div class="menu-row">
+              <input type="text" class="menu-row-name" value="濡れパン" readonly>
+              <label class="menu-row-field"><input type="text" value="9000" readonly>円</label>
+              <label class="menu-row-field"><input type="text" value="3" readonly>時間</label>
+              <div class="menu-row-actions"><button type="button" class="menu-save-btn">保存</button><button type="button" class="menu-delete-btn">削除</button></div>
+            </div>
+            <div class="menu-row">
+              <input type="text" class="menu-row-name" value="パンチパーマ" readonly>
+              <label class="menu-row-field"><input type="text" value="9000" readonly>円</label>
+              <label class="menu-row-field"><input type="text" value="3" readonly>時間</label>
+              <div class="menu-row-actions"><button type="button" class="menu-save-btn">保存</button><button type="button" class="menu-delete-btn">削除</button></div>
+            </div>
+            <div class="menu-row">
+              <input type="text" class="menu-row-name" value="ニグロ" readonly>
+              <label class="menu-row-field"><input type="text" value="9000" readonly>円</label>
+              <label class="menu-row-field"><input type="text" value="3" readonly>時間</label>
+              <div class="menu-row-actions"><button type="button" class="menu-save-btn">保存</button><button type="button" class="menu-delete-btn">削除</button></div>
+            </div>
+            <div class="menu-row">
+              <input type="text" class="menu-row-name" value="極道パーマ" readonly>
+              <label class="menu-row-field"><input type="text" value="9000" readonly>円</label>
+              <label class="menu-row-field"><input type="text" value="3" readonly>時間</label>
+              <div class="menu-row-actions"><button type="button" class="menu-save-btn">保存</button><button type="button" class="menu-delete-btn">削除</button></div>
+            </div>
+          </section>
+          <section class="menu-admin-category">
+            <h3 class="category-title"><img src="/images/hairdresser.png" class="category-icon" width="30" height="30" alt="">カラー</h3>
+            <div class="menu-row">
+              <input type="text" class="menu-row-name" value="カラー" readonly>
+              <label class="menu-row-field"><input type="text" value="8000" readonly>円</label>
+              <label class="menu-row-field"><input type="text" value="2" readonly>時間</label>
+              <div class="menu-row-actions"><button type="button" class="menu-save-btn">保存</button><button type="button" class="menu-delete-btn">削除</button></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 予約セルを押した時の、お客様に連絡を取るためのモーダル -->
+  <div id="admin-contact-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="contact-customer-name">
+      <h2 id="contact-customer-name" style="text-align: center; margin-top: 0;">test 様</h2>
+
+      <dl class="contact-list">
+        <div class="contact-row">
+          <dt>お名前</dt>
+          <dd id="contact-name"><button type="button" class="contact-value-btn">test</button></dd>
+        </div>
+        <div class="contact-row">
+          <dt>予約日時</dt>
+          <dd id="contact-datetime">12/5(土) 9:00 〜 10:00</dd>
+        </div>
+        <div class="contact-row">
+          <dt>メニュー</dt>
+          <dd>
+            <select id="contact-menu-select" aria-label="メニューを変更"><option>フルコース</option></select>
+          </dd>
+        </div>
+        <div class="contact-row">
+          <dt>電話番号</dt>
+          <dd id="contact-phone"><button type="button" class="contact-value-btn">090-0000-0000</button></dd>
+        </div>
+        <div class="contact-row">
+          <dt>Instagram</dt>
+          <dd id="contact-instagram"><button type="button" class="contact-value-btn">@tim_cook</button></dd>
+        </div>
+      </dl>
+
+      <div class="contact-actions">
+        <button type="button" id="contact-cancel-btn" class="contact-cancel-btn">予約を取り消す</button>
+        <button type="button" id="contact-no-show-btn" class="contact-no-show-btn">ドタキャンされた</button>
+      </div>
+
+      <button type="button" id="contact-close-btn" class="nav-btn" style="width: 100%;">閉じる</button>
+    </div>
+  </div>
+
+   <footer id="admin-footer" class="site-footer" style="display: none;">
+    <p>&copy; 2024 Barber</p>
+
+
+  </footer>
+
+  <!-- 管理画面に入る時のパスワード入力モーダル -->
+  <div id="admin-login-modal" class="modal-overlay" style="display: flex;">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="admin-login-title">
+      <h2 id="admin-login-title" style="text-align: center; margin-top: 0;">管理画面</h2>
+      <p style="text-align: center; font-size: 0.9rem; color: #6b7280; margin-bottom: 1.5rem;">ポートフォリオ用のデモなので、パスワードは「test」です</p>
+
+      <div id="admin-login-message" class="status-message" role="alert" style="display: none;"></div>
+
+      <form id="admin-login-form">
+        <div class="form-group">
+          <label for="admin-login-token">パスワード</label>
+          <input type="password" id="admin-login-token" required autocomplete="current-password"
+            style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 16px; min-height: 48px; box-sizing: border-box;">
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+          <a href="tutorial-booking.html" class="nav-btn" style="flex: 1; display: flex; align-items: center; justify-content: center;">戻る</a>
+          <button type="submit" id="admin-login-submit-btn" class="submit-btn" style="flex: 1; margin: 0;">入る</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="/src/tutorialAdmin.ts"></script>
+</body>
+</html>

@@ -1,6 +1,5 @@
 import * as inputs from "./form.ts"
 import { loadMenus } from "./modules/menu.ts"
-import { startBookingTutorialOnLoad } from "./modules/bookingTutorial.ts"
 import { setupReflectionButton } from "./modules/reflectionModal.ts"
 import { createReservation, fetchReservations } from "./services/apiClient.ts"
 import type { MenuInfo, Reservation, ReservationSlot, SlotStatus, Step } from "./types/index.ts"
@@ -610,7 +609,5 @@ document.addEventListener('DOMContentLoaded', () => {
 loadMenus().then((menus: MenuInfo[]) => {
   menuData = Object.fromEntries(menus.map((menu: MenuInfo) => [String(menu.id), menu]));
   updateNextBtnState();
-  // メニューカードを光らせるので、描画が終わってから表示する
-  startBookingTutorialOnLoad();
 });
 loadAndRenderSchedule();

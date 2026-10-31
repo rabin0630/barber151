@@ -1,10 +1,7 @@
-// 管理者画面のチュートリアル。予約画面のチュートリアルの続きとして、お店側の使い方を案内する
+// 管理者画面のチュートリアル。予約画面のチュートリアルの続きとして、チュートリアル専用の画面でお店側の使い方を案内する
 import { startTutorial, takeTutorialParam, type TutorialJump, type TutorialStep } from './tutorial.ts';
 import { ADMIN_TUTORIAL_PARAM_REFLECTION } from './adminTutorialParams.ts';
 import { REFLECTIONS, type Reflection } from './reflections.ts';
-
-/** 予約画面のチュートリアルで入れてもらったお客様の名前 */
-const PRACTICE_CUSTOMER_NAME = 'test';
 
 /** パスワード。ポートフォリオ用なので公開している */
 const DEMO_PASSWORD = 'test';
@@ -12,58 +9,8 @@ const DEMO_PASSWORD = 'test';
 const isVisible = (id: string): boolean =>
   (document.getElementById(id) as HTMLElement).style.display !== 'none';
 
-/**
- * 予約画面のチュートリアルで入れた予約のセルを探す
- * 見つからない時（チュートリアルの途中から来た時など）は、表の一番上にある予約にする
- */
-const findPracticeReservation = (): HTMLElement | null => {
-  const cards = document.querySelectorAll<HTMLElement>('#schedule-body .booking-card');
-  for (const card of cards) {
-    if (card.querySelector('.booking-card-name')?.textContent === PRACTICE_CUSTOMER_NAME) {
-      return card.closest('td');
-    }
-  }
-  return cards[0]?.closest('td') ?? null;
-};
-
-/** 表を何回「→」で送ったか。探す時に、最初の日付から探し直すのに使う */
-let pagesMoved: number = 0;
-
-/** 表を送って探す回数。予約は2か月先まで入れられるので、スマートフォンの3日ずつでも届く回数にする */
-const MAX_PAGES: number = 21;
-
-const clickScheduleBtn = (selector: string): void =>
-  (document.querySelector(selector) as HTMLButtonElement).click();
-
-/**
- * 表示中の日付に find の要素がなければ、最初の日付から「→」で送って探す
- * 見つからない時は最初の日付に戻す。表の描き直しはすぐ終わるので、送るたびに探せる
- */
-const showPageWith = (find: () => Element | null): boolean => {
-  if (find()) return true;
-  for (; pagesMoved > 0; pagesMoved--) clickScheduleBtn('.prev-schedule-btn');
-  if (find()) return true;
-  while (pagesMoved < MAX_PAGES) {
-    clickScheduleBtn('.next-schedule-btn');
-    pagesMoved++;
-    if (find()) return true;
-  }
-  for (; pagesMoved > 0; pagesMoved--) clickScheduleBtn('.prev-schedule-btn');
-  return false;
-};
-
-/** 練習用の予約が見える日付まで表を送る。ない時は、どれかの予約が見える日付にする */
-const showPracticeReservation = (): void => {
-  const findByName = (): Element | null =>
-    [...document.querySelectorAll('#schedule-body .booking-card-name')]
-      .find((name) => name.textContent === PRACTICE_CUSTOMER_NAME) ?? null;
-  if (!showPageWith(findByName)) showPageWith(() => document.querySelector('#schedule-body .booking-card'));
-};
-
-/** 「＋」の空いている枠が見える日付まで表を送る（定休日が続く時など） */
-const showEmptySlot = (): void => {
-  showPageWith(() => document.querySelector('#schedule-body .clickable-cell'));
-};
+/** 予約画面のチュートリアルで入れた予約のセル */
+const PRACTICE_RESERVATION = '#schedule-body td[data-practice]';
 
 /** 連絡先モーダルが開いていたら閉じる */
 const closeContactModal = (): void => {
@@ -75,7 +22,7 @@ const closeContactModal = (): void => {
 /** 連絡先モーダルが閉じていたら、練習用の予約を押して開く */
 const openContactModal = (): void => {
   if (!isVisible('admin-contact-modal')) {
-    findPracticeReservation()?.click();
+    document.querySelector<HTMLElement>(PRACTICE_RESERVATION)?.click();
   }
 };
 
@@ -97,8 +44,8 @@ const USAGE_STEPS: TutorialStep[] = [
     title: '管理者画面に入りましょう',
     text: '「入る」を押してください。',
     waitFor: 'click',
-    // 予約一覧を読み込み終わってから次へ進む
-    nextWhen: () => (document.getElementById('admin-main') as HTMLElement).dataset.loaded === 'true',
+    // 管理者画面が表示されてから次へ進む
+    nextWhen: () => isVisible('admin-main'),
   },
   // 予約一覧の表の使い方
   {
@@ -112,23 +59,20 @@ const USAGE_STEPS: TutorialStep[] = [
     text: '「←」「→」で、前後の日付に切り替えられます（スマートフォンは3日ずつ、PCは7日ずつです）。真ん中のカレンダーから、見たい日へ直接移動することもできます。',
   },
   {
-    find: findPracticeReservation,
+    selector: PRACTICE_RESERVATION,
     title: '予約のカード',
     text: '予約はカードで表示しています。メニュー・お名前・Instagramが一目で分かり、カードの長さが施術にかかる時間です。',
-    prepare: showPracticeReservation,
   },
   {
     selector: '#schedule-body .clickable-cell',
     title: '空いている枠',
     text: '「＋」は空いている枠です。押すと、電話で受けた予約を追加できます。「-」は定休日や過ぎた時間なので、予約を入れられません。',
-    prepare: showEmptySlot,
   },
   {
-    find: findPracticeReservation,
+    selector: PRACTICE_RESERVATION,
     title: '先ほどの予約を見てみましょう',
     text: '先ほど予約した「test」さんがここにいます！タップしてみてください。',
     restore: closeContactModal,
-    prepare: showPracticeReservation,
     waitFor: 'click',
   },
   // 予約詳細のモーダルの使い方
@@ -227,19 +171,17 @@ const JUMP_TO_REFLECTION: TutorialJump = {
 };
 
 /**
- * 予約画面のチュートリアルから来た時に、続きを始める
- * - ?tutorial=1: 使い方の続きから
+ * 管理者画面のチュートリアルを始める
  * - ?tutorial=2: 「使い方を飛ばす」を押して来た時。工夫したこと・これからの課題から
+ * - それ以外: 使い方の続きから
  */
-export function startAdminTutorialOnLoad(): void {
-  const param: string | null = takeTutorialParam();
-  if (param === null) return;
-  isUsageSkipped = param === ADMIN_TUTORIAL_PARAM_REFLECTION;
+export function startAdminTutorial(): void {
+  isUsageSkipped = takeTutorialParam() === ADMIN_TUTORIAL_PARAM_REFLECTION;
   startTutorial(STEPS, {
-    startIndex: param === ADMIN_TUTORIAL_PARAM_REFLECTION ? REFLECTION_START : 0,
+    startIndex: isUsageSkipped ? REFLECTION_START : 0,
     jump: JUMP_TO_REFLECTION,
-    // 最後の「おわる」を押したらトップページに戻る
-    onFinish: () => {
+    // 最後まで進むか、スキップするとトップページに戻る
+    onEnd: () => {
       window.location.href = 'index.html';
     },
   });
