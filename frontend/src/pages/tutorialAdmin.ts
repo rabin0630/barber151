@@ -1,6 +1,6 @@
 // チュートリアル専用の管理者画面。APIは呼ばず、案内で通る操作だけを画面に反映する
-import { startAdminTutorial } from './modules/adminTutorial.ts';
-import { OTHER_RESERVATIONS, PRACTICE_SLOT, renderTutorialSchedule, type TutorialReservation } from './modules/tutorialSchedule.ts';
+import { showAdminMain, startAdminTutorial } from '../modules/adminTutorial.ts';
+import { OTHER_RESERVATIONS, PRACTICE_SLOT, renderTutorialSchedule, type TutorialReservation } from '../modules/tutorialSchedule.ts';
 
 const contactModal = document.getElementById('admin-contact-modal') as HTMLDivElement;
 
@@ -15,9 +15,7 @@ const PRACTICE_RESERVATION: TutorialReservation = {
 
 (document.getElementById('admin-login-form') as HTMLFormElement).addEventListener('submit', (e: SubmitEvent) => {
   e.preventDefault();
-  (document.getElementById('admin-login-modal') as HTMLDivElement).style.display = 'none';
-  (document.getElementById('admin-main') as HTMLElement).style.display = '';
-  (document.getElementById('admin-footer') as HTMLElement).style.display = '';
+  showAdminMain();
 });
 
 (document.getElementById('contact-close-btn') as HTMLButtonElement).addEventListener('click', () => {

@@ -1,4 +1,4 @@
 // トップページのスクリプト
-import { setupReflectionButton } from './modules/reflectionModal.ts';
+import { setupReflectionButton } from '../modules/reflectionModal.ts';
 
 setupReflectionButton(document.getElementById('reflection-btn'));
