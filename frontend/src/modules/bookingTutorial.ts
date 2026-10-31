@@ -1,29 +1,9 @@
-// 予約画面のチュートリアル。メニュー選択から予約完了まで、実際に操作してもらう
-import { startTutorial, takeTutorialParam, type TutorialJump, type TutorialStep } from './tutorial.ts';
-import { ADMIN_TUTORIAL_PARAM_REFLECTION, ADMIN_TUTORIAL_PARAM_USAGE } from './adminTutorialParams.ts';
-
-/** 一度見たらlocalStorageに保存して、次からは自動で出さない */
-const STORAGE_KEY = 'bookingTutorialDone';
+// 予約画面のチュートリアル。メニュー選択から予約完了まで、チュートリアル専用の画面で操作してもらう
+import { startTutorial, type TutorialJump, type TutorialStep } from './tutorial.ts';
+import { ADMIN_TUTORIAL_PARAM_REFLECTION } from './adminTutorialParams.ts';
 
 /** 練習で選んでもらうメニューの名前 */
 const PRACTICE_MENU_NAME = 'フルコース';
-
-/** 見た記録があるか。localStorageが使えない時は見ていない扱いにする */
-const isDone = (): boolean => {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === '1';
-  } catch {
-    return false;
-  }
-};
-
-const markDone = (): void => {
-  try {
-    localStorage.setItem(STORAGE_KEY, '1');
-  } catch {
-    // 保存できなくてもチュートリアルは閉じられるので何もしない
-  }
-};
 
 /** 予約画面が今どの段階を表示しているか（1: メニュー選択, 2: 日時選択, 3: 内容確認） */
 const getScreen = (): number => {
@@ -37,32 +17,6 @@ const backToScreen = (screen: number) => (): void => {
   for (let i: number = getScreen(); i > screen; i--) {
     (document.getElementById('footer-back-btn') as HTMLButtonElement).click();
   }
-};
-
-/** 練習用メニューのカードを探す */
-const findPracticeMenuCard = (): HTMLElement | null => {
-  const cards = document.querySelectorAll<HTMLLabelElement>('#step-1-menu .menu-card');
-  for (const card of cards) {
-    if (card.querySelector('.menu-name')?.textContent === PRACTICE_MENU_NAME) {
-      return card;
-    }
-  }
-  return null;
-};
-
-/**
- * 一番早く予約できる「○」のボタンを探す
- * 表は時間ごとの行で並んでいるので、画面の順番ではなく日時で比べる
- */
-const findEarliestSlot = (): HTMLElement | null => {
-  const slots = document.querySelectorAll<HTMLButtonElement>('#step-2-date.active .time-slot-btn');
-  let earliest: HTMLButtonElement | null = null;
-  for (const slot of slots) {
-    if (!earliest || (slot.dataset.datetime ?? '') < (earliest.dataset.datetime ?? '')) {
-      earliest = slot;
-    }
-  }
-  return earliest;
 };
 
 const STEPS: TutorialStep[] = [
@@ -87,7 +41,7 @@ const STEPS: TutorialStep[] = [
     restore: backToScreen(1),
   },
   {
-    find: findPracticeMenuCard,
+    selector: '.menu-card[data-practice]',
     title: 'メニューを選んでください',
     text: `まずはメニューから。「${PRACTICE_MENU_NAME}」をタップしてみてください！`,
     restore: backToScreen(1),
@@ -101,7 +55,7 @@ const STEPS: TutorialStep[] = [
     waitFor: 'click',
   },
   {
-    find: findEarliestSlot,
+    selector: '.time-slot-btn[data-practice]',
     title: '日時を選んでください',
     text: '「○」が空いている時間です。光っている一番早い「○」をタップしてみてください！',
     restore: backToScreen(2),
@@ -140,14 +94,10 @@ const STEPS: TutorialStep[] = [
     noBack: true,
   },
   {
-    selector: '.header-nav a[href="admin.html"]',
+    selector: '.header-nav a[href^="tutorial-admin.html"]',
     title: '管理者画面へ移りましょう',
     text: '次は、今の予約がお店側でどう見えるかをご覧ください！上の「管理者画面」を押してください。',
     waitFor: 'click',
-    // 管理者画面でもチュートリアルの続きを始めるよう、移動する前にリンク先に目印を付ける
-    onDone: (target: HTMLElement) => {
-      (target as HTMLAnchorElement).href = `admin.html?tutorial=${ADMIN_TUTORIAL_PARAM_USAGE}`;
-    },
   },
 ];
 
@@ -159,17 +109,16 @@ const JUMP_TO_REFLECTION: TutorialJump = {
   label: '使い方を飛ばす',
   isShown: (index: number) => index >= JUMP_SHOWN_FROM,
   onClick: () => {
-    window.location.href = `admin.html?tutorial=${ADMIN_TUTORIAL_PARAM_REFLECTION}`;
+    window.location.href = `tutorial-admin.html?tutorial=${ADMIN_TUTORIAL_PARAM_REFLECTION}`;
   },
 };
 
-/**
- * 予約画面を開いた時にチュートリアルを表示するか決める
- * トップの「このアプリの使い方」（?tutorial=1）から来た時と、初めて開いた時に表示する
- */
-export function startBookingTutorialOnLoad(): void {
-  const isRequested: boolean = takeTutorialParam() !== null;
-  if (isRequested || !isDone()) {
-    startTutorial(STEPS, { onEnd: markDone, jump: JUMP_TO_REFLECTION });
-  }
+/** 予約画面のチュートリアルを始める。終わる・スキップするとトップページに戻る */
+export function startBookingTutorial(): void {
+  startTutorial(STEPS, {
+    jump: JUMP_TO_REFLECTION,
+    onEnd: () => {
+      window.location.href = 'index.html';
+    },
+  });
 }

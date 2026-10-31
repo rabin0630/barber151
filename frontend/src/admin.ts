@@ -1,6 +1,5 @@
 import { loadMenuManager } from './modules/adminMenu.ts';
 import { setupPhoneNumberInput } from './modules/phoneNumber.ts';
-import { startAdminTutorialOnLoad } from './modules/adminTutorial.ts';
 import { cancelReservation, changeReservationContacts, changeReservationMenu, changeReservationName, createReservation, fetchAdminReservations, fetchHistory, getAdminToken, saveAdminToken, verifyAdminToken } from './services/apiClient.ts';
 
 import type { AdminReservation, HistoryItem, ReservationItem } from './types/index.ts';
@@ -61,8 +60,6 @@ async function loadAndRenderSchedule(): Promise<void> {
     console.error('予約データの取得に失敗しました', e);
   }
   renderSchedule(currentStartDate);
-  // チュートリアルが、予約一覧を読み込み終わったか確かめるのに使う
-  adminMain.dataset.loaded = 'true';
   loadHistory(); // カレンダー描画と一緒に履歴も読み込む
 }
 
@@ -198,8 +195,7 @@ async function restoreLogin(): Promise<void> {
   loginTokenInput.focus();
 }
 
-// ログインの確認が終わってから、予約画面のチュートリアルの続きを始める
-restoreLogin().then(startAdminTutorialOnLoad);
+restoreLogin();
 
 loadMenuManager();
 
