@@ -39,7 +39,10 @@ const backToScreen = (screen: number) => (): void => {
   }
 };
 
-/** 練習用メニューのカードを探す */
+/**
+ * 練習用メニューのカードを探す
+ * 管理者画面で削除や名前の変更をされていて見つからない時は、一番上のメニューを使う
+ */
 const findPracticeMenuCard = (): HTMLElement | null => {
   const cards = document.querySelectorAll<HTMLLabelElement>('#step-1-menu .menu-card');
   for (const card of cards) {
@@ -47,7 +50,7 @@ const findPracticeMenuCard = (): HTMLElement | null => {
       return card;
     }
   }
-  return null;
+  return cards[0] ?? null;
 };
 
 /**
@@ -89,7 +92,7 @@ const STEPS: TutorialStep[] = [
   {
     find: findPracticeMenuCard,
     title: 'メニューを選んでください',
-    text: `まずはメニューから。「${PRACTICE_MENU_NAME}」をタップしてみてください！`,
+    text: () => `まずはメニューから。「${findPracticeMenuCard()?.querySelector('.menu-name')?.textContent}」をタップしてみてください！`,
     restore: backToScreen(1),
     waitFor: 'change',
   },

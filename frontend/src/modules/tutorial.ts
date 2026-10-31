@@ -293,6 +293,11 @@ const showStep = (index: number, direction: 1 | -1 = 1): void => {
       // メニューのカードなど、中のラジオボタンを選ぶ
       (target instanceof HTMLInputElement ? target : target.querySelector('input'))?.click();
     } else if (step.waitFor === 'click') {
+      // 無効なボタンはclick()しても何も起きず止まってしまうので、操作せずに次へ進む
+      if (target instanceof HTMLButtonElement && target.disabled) {
+        goNext();
+        return;
+      }
       target.click();
     }
   };
