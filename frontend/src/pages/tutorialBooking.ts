@@ -1,6 +1,6 @@
 // チュートリアル専用の予約画面。APIは呼ばず、案内で通る操作だけを画面に反映する
-import { startBookingTutorial } from './modules/bookingTutorial.ts';
-import { OTHER_RESERVATIONS, PRACTICE_SLOT, renderTutorialSchedule } from './modules/tutorialSchedule.ts';
+import { startBookingTutorial } from '../modules/bookingTutorial.ts';
+import { OTHER_RESERVATIONS, PRACTICE_SLOT, renderTutorialSchedule } from '../modules/tutorialSchedule.ts';
 
 const form = document.getElementById('reservation-form') as HTMLFormElement;
 const footerBackBtn = document.getElementById('footer-back-btn') as HTMLButtonElement;
