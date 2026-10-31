@@ -9,6 +9,13 @@ const DEMO_PASSWORD = 'test';
 const isVisible = (id: string): boolean =>
   (document.getElementById(id) as HTMLElement).style.display !== 'none';
 
+/** パスワードの入力モーダルを閉じて、管理者画面の中身を表示する */
+export const showAdminMain = (): void => {
+  (document.getElementById('admin-login-modal') as HTMLElement).style.display = 'none';
+  (document.getElementById('admin-main') as HTMLElement).style.display = '';
+  (document.getElementById('admin-footer') as HTMLElement).style.display = '';
+};
+
 /** 予約画面のチュートリアルで入れた予約のセル */
 const PRACTICE_RESERVATION = '#schedule-body td[data-practice]';
 
@@ -52,6 +59,8 @@ const USAGE_STEPS: TutorialStep[] = [
     selector: '#schedule-wrapper',
     title: '予約一覧の見方',
     text: '予約一覧の表です。横に日付、縦に8:00〜19:00の時間が並んでいます。赤い日付は定休日（月曜・火曜）です。',
+    // 入ったあとはログインの画面に戻れないので、戻るボタンを出さない
+    noBack: true,
   },
   {
     selector: '.schedule-nav',
@@ -166,6 +175,7 @@ const JUMP_TO_REFLECTION: TutorialJump = {
   onClick: (goTo: (index: number) => void) => {
     isUsageSkipped = true;
     closeContactModal();
+    showAdminMain();
     goTo(REFLECTION_START);
   },
 };
@@ -177,6 +187,7 @@ const JUMP_TO_REFLECTION: TutorialJump = {
  */
 export function startAdminTutorial(): void {
   isUsageSkipped = takeTutorialParam() === ADMIN_TUTORIAL_PARAM_REFLECTION;
+  if (isUsageSkipped) showAdminMain();
   startTutorial(STEPS, {
     startIndex: isUsageSkipped ? REFLECTION_START : 0,
     jump: JUMP_TO_REFLECTION,

@@ -103,15 +103,20 @@ function renderHistory(history: HistoryItem[]): void {
     const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][targetDate.getDay()];
     const formattedTarget: string = `${targetDate.getMonth() + 1}/${targetDate.getDate()}(${dayOfWeek}) ${targetDate.getHours()}:00`;
     
+    // お客様の名前は誰でも入力できるので、HTMLとして扱わないようtextContentで入れる
     li.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.25rem;">
-        <span style="font-weight: bold; color: #111827; font-size: 1.05rem;">${item.customer_name} 様</span>
-        <span style="font-size: 0.8rem; color: #6b7280;">${formattedCreated} に追加</span>
+        <span class="history-customer" style="font-weight: bold; color: #111827; font-size: 1.05rem;"></span>
+        <span class="history-created" style="font-size: 0.8rem; color: #6b7280;"></span>
       </div>
       <div style="font-size: 0.9rem; color: #4b5563;">
-        予約日時: <span style="font-weight: 600;">${formattedTarget}</span> / メニュー: <span style="font-weight: 600;">${item.menu_name}</span>
+        予約日時: <span class="history-target" style="font-weight: 600;"></span> / メニュー: <span class="history-menu" style="font-weight: 600;"></span>
       </div>
     `;
+    (li.querySelector('.history-customer') as HTMLSpanElement).textContent = `${item.customer_name} 様`;
+    (li.querySelector('.history-created') as HTMLSpanElement).textContent = `${formattedCreated} に追加`;
+    (li.querySelector('.history-target') as HTMLSpanElement).textContent = formattedTarget;
+    (li.querySelector('.history-menu') as HTMLSpanElement).textContent = item.menu_name;
     historyList.appendChild(li);
   });
 }

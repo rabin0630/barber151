@@ -554,7 +554,7 @@ form.addEventListener('submit', async (e: SubmitEvent) => {
     const selectedDatetimeStr: string | null = summaryDatetime.textContent; // 例: "4/30(火) 10:00 〜 11:00"
     formContainer.style.display = 'none';
     successContainer.style.display = 'block';
-    successDatetimeMsg.innerHTML = selectedDatetimeStr || '';
+    successDatetimeMsg.textContent = selectedDatetimeStr || '';
     stickyFooter.style.display = 'none';
 
     form.reset();
@@ -584,6 +584,7 @@ backToHomeBtn.addEventListener('click', () => {
 
   // 初期状態を明示
   currentStep = 1;
+  footerBackBtn.style.visibility = 'hidden'; // Step1では戻るボタンを非表示
   indicatorStep1.classList.add('active');
   indicatorStep2.classList.remove('active');
   indicatorStep3.classList.remove('active');
