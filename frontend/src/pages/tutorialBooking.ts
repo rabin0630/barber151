@@ -16,7 +16,11 @@ const SCREENS: { contentId: string; indicatorId: string; nextLabel: string }[] =
 /** 表示している段階（SCREENS の番号） */
 let currentScreen: number = 0;
 
-/** index番目の段階を表示する */
+/**
+ * index番目の段階を表示する
+ *
+ * @param index SCREENS の番号
+ */
 const showScreen = (index: number): void => {
   currentScreen = index;
   SCREENS.forEach((screen, i: number) => {

@@ -51,7 +51,11 @@ type ScheduleOptions = {
   fillEmptyCell: (td: HTMLTableCellElement, date: number, hour: number) => void;
 };
 
-/** 日付の見出しと、8:00から19:00までの表を描く */
+/**
+ * 日付の見出しと、8:00から19:00までの表を描く
+ *
+ * @param options 表の描き方の設定
+ */
 export function renderTutorialSchedule(options: ScheduleOptions): void {
   const days: TutorialDay[] = DAYS.slice(0, options.daysToShow);
 
