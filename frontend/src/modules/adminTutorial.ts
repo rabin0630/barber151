@@ -6,6 +6,12 @@ import { REFLECTIONS, type Reflection } from './reflections.ts';
 /** パスワード。ポートフォリオ用なので公開している */
 const DEMO_PASSWORD = 'test';
 
+/**
+ * 要素が画面に表示されているか確かめる
+ *
+ * @param id 要素のid
+ * @return display: none でなければtrue
+ */
 const isVisible = (id: string): boolean =>
   (document.getElementById(id) as HTMLElement).style.display !== 'none';
 
@@ -33,7 +39,12 @@ const openContactModal = (): void => {
   }
 };
 
-/** 予約詳細モーダルの、idの値が入っている行（名前・電話番号など）を探す */
+/**
+ * 予約詳細モーダルの、idの値が入っている行（名前・電話番号など）を探す関数を作る
+ *
+ * @param id 値の要素のid
+ * @return 行を探す関数
+ */
 const findContactRow = (id: string) => (): HTMLElement | null =>
   document.getElementById(id)?.closest<HTMLElement>('.contact-row') ?? null;
 
@@ -182,6 +193,7 @@ const JUMP_TO_REFLECTION: TutorialJump = {
 
 /**
  * 管理者画面のチュートリアルを始める
+ *
  * - ?tutorial=2: 「使い方を飛ばす」を押して来た時。工夫したこと・これからの課題から
  * - それ以外: 使い方の続きから
  */
