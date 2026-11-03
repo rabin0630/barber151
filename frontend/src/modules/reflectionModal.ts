@@ -1,5 +1,5 @@
 // 「工夫したこと」ボタンを押した時に、今のページの上に出すモーダル
-import '../reflection.css';
+import '../styles/reflection.css';
 import { REFLECTIONS, type Reflection } from './reflections.ts';
 
 let modalEl: HTMLDivElement | null = null;
