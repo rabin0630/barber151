@@ -100,8 +100,3 @@ Docker Compose や CI/CD を取り入れ、**アイデアを形にして店長�
 | テスト | pytest（単体テスト・API の結合テスト） |
 | インフラ | AWS EC2、Docker Compose、nginx、Let's Encrypt（certbot） |
 | CI/CD | GitHub Actions、GitHub Container Registry（GHCR）、cron |
-
-
-## これからの課題
-
-
