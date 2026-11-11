@@ -5,6 +5,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg)
 ![AWS](https://img.shields.io/badge/AWS-EC2-FF9900.svg)
+<img width="1980" height="1080" alt="hero-barber" src="https://github.com/user-attachments/assets/4e4daa03-756d-4309-ae26-7856300625c0" />
 
 **🔗 デモ: https://junrabin.com**
 
