@@ -11,6 +11,28 @@ body {
   align-items: center;
 }
 
+/* ライト/ダークの切り替えボタン。右上の言語切り替えと左右対称になるよう、左上に置く */
+.theme-toggle {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  padding: 0.3rem 0.75rem;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.theme-toggle:hover {
+  opacity: 1;
+}
+
 .lang-switch {
   position: absolute;
   top: 20px;
