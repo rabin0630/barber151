@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Barber - Top</title>
+  <!-- 保存してあるテーマを、画面を描く前に当てる。top.ts（type="module"）は描いた後に動くので、そこで当てると一瞬darkが見えてしまう
+       キー名'theme'はsrc/modules/themeToggle.tsのSTORAGE_KEYと同じにする -->
+  <script>
+    try {
+      if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light';
+    } catch (e) {
+      // localStorageが使えない時は、何もせずdark（初期値）のまま
+    }
+  </script>
   <link rel="icon" type="image/png" href="/images/bandana_man.png">
   <link rel="stylesheet" href="/src/top.css">
   <!-- Fonts: Cinzel for elegant serif English, Noto Serif JP for Japanese compatibility -->
@@ -12,6 +21,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
+  <!-- ライト/ダークを切り替えるボタン。今と逆のモード名を出す（今はdarkなのでlight） -->
+  <button type="button" id="theme-toggle" class="theme-toggle">change to light mode</button>
+
   <div class="lang-switch">
     <span class="active">JP</span> | <span>EN</span>
   </div>
