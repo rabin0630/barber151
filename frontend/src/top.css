@@ -8,6 +8,13 @@
   --border-color: rgba(255, 255, 255, 0.5); /* 薄い枠線（使い方・工夫したこと・テーマ切り替えのボタン） */
 }
 
+/* light。darkの色を白黒反転した値 */
+[data-theme="light"] {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --border-color: rgba(0, 0, 0, 0.5);
+}
+
 body {
   margin: 0;
   padding: 0;
