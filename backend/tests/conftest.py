@@ -7,9 +7,10 @@ from sqlalchemy.orm import Session
 
 from src import config
 from src.database import Base
-from src.dependencies import get_db
+from src.dependencies import get_cleaner, get_db
 from src.main import app
-from src.services import menu_service, reservation_service
+from src.services import menu_service
+from src.services.cleaners import DemoReservations
 from tests.dependencies import TestSessionLocal, get_test_db, test_engine
 
 
@@ -24,12 +25,6 @@ def admin_token(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
-def reset_demo(monkeypatch: pytest.MonkeyPatch) -> None:
-    """各テストで、デモの予約を消す仕組みを止めておく(seed_demo_reservationsを呼んだテストだけ動く)"""
-    monkeypatch.setattr(reservation_service, "demo_seeded_at", None)
-
-
-@pytest.fixture(autouse=True)
 def reset_tables() -> Iterator[None]:
     """各テストの前に、テーブルを作り直してメニューを登録する"""
     Base.metadata.drop_all(bind=test_engine)
@@ -40,15 +35,31 @@ def reset_tables() -> Iterator[None]:
 
 
 @pytest.fixture
-def client() -> Iterator[TestClient]:
-    """get_dbをテスト用のデータベースに差し替えたTestClient
+def demo() -> DemoReservations:
+    """テストごとに新しく作る、デモの予約の掃除
 
-    withを使わないので、lifespan(本番のデータベースへのcreate_all)は動かない。
+    seedを呼ぶまではseeded_atがNoneで何も消さないので、seedを呼んだテストだけ掃除が動く。
+
+    Returns:
+        DemoReservations: デモの予約の掃除
+    """
+    return DemoReservations()
+
+
+@pytest.fixture
+def client(demo: DemoReservations) -> Iterator[TestClient]:
+    """get_dbをテスト用のデータベースに、get_cleanerをdemoに差し替えたTestClient
+
+    withを使わないので、lifespan(本番のデータベースへのcreate_allと、app.state.cleanerを置く処理)は動かない。
+
+    Args:
+        demo (DemoReservations): デモの予約の掃除
 
     Yields:
         TestClient: APIを呼ぶクライアント
     """
     app.dependency_overrides[get_db] = get_test_db
+    app.dependency_overrides[get_cleaner] = lambda: demo
     yield TestClient(app)
     app.dependency_overrides.clear()
 

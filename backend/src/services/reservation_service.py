@@ -1,95 +1,48 @@
 """予約のルール(連絡先の必須チェック、重複チェック)と、予約の登録・取得の処理"""
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
 from src.crud import menus_crud, reservations_crud
 from src.exceptions import AppError
 from src.models import Reservation
+from src.services.cleaners import ExpiredReservationCleaner
 from src.services.contacts import normalize_contacts
 from src.time_utils import now_utc, to_utc_naive
 
 HISTORY_LIMIT = 10
 
-## 日本時間。ダミーの予約を営業時間内に入れるのに使う
-JST = timezone(timedelta(hours=9))
-
-## ダミーの予約のお客様の(名前, InstagramのID)。DEMO_DATAがtrueの時だけ使う
-## 著名人とサッカー選手の公式アカウント。電話番号はすべてDEMO_PHONE_NUMBERにする
-DEMO_CUSTOMERS: list[tuple[str, str]] = [
-    ("ジャスティン・ビーバー", "justinbieber"),
-    ("アリアナ・グランデ", "arianagrande"),
-    ("ティム・クック", "tim_cook"),
-    ("テイラー・スウィフト", "taylorswift"),
-    ("ドウェイン・ジョンソン", "therock"),
-    ("セレーナ・ゴメス", "selenagomez"),
-    ("クリスティアーノ・ロナウド", "cristiano"),
-    ("リオネル・メッシ", "leomessi"),
-    ("ネイマール", "neymarjr"),
-]
-
-## ダミーの予約の電話番号
-DEMO_PHONE_NUMBER = "090-0000-0000"
-
-## ダミーの予約を入れる時刻(日本時間)。所要時間が最大3時間でも重ならず、20時までに終わる
-DEMO_HOURS: list[int] = [10, 15]
-
-## ダミーの予約を入れる日数(明日から)
-DEMO_DAYS = 14
-
-## デモ中に作られた予約を消すまでの時間。見に来た人が試した予約がたまらないようにする
-DEMO_RESERVATION_LIFETIME = timedelta(minutes=5)
-
-## ダミーの予約を入れ直した日時(UTC)。これより後に作られた予約は、DEMO_RESERVATION_LIFETIMEで消す
-## デモでない時はNoneのままで、何も消さない
-demo_seeded_at: datetime | None = None
-
-
-def delete_expired_demo_reservations(db: Session) -> None:
-    """デモ中に作られ、DEMO_RESERVATION_LIFETIMEを過ぎた予約を消し、コミットする
-
-    予約画面・管理画面のどちらから作った予約も消す。ダミーの予約は消さない。
-    デモでない時(demo_seeded_atがNone)は何もしない。
+def list_confirmed_reservations(db: Session, cleaner: ExpiredReservationCleaner) -> list[Reservation]:
+    """確定済みの予約をすべて返す。期限切れの予約は先に消す
 
     Args:
         db (Session): DBのセッション
-    """
-    if demo_seeded_at is None:
-        return
-    reservations_crud.delete_reservations_created_between(
-        db, demo_seeded_at, now_utc() - DEMO_RESERVATION_LIFETIME
-    )
-    db.commit()
-
-
-def list_confirmed_reservations(db: Session) -> list[Reservation]:
-    """確定済みの予約をすべて返す。デモ中は、時間が過ぎた予約を先に消す
-
-    Args:
-        db (Session): DBのセッション
+        cleaner (ExpiredReservationCleaner): 期限切れの予約の掃除
 
     Returns:
         list[Reservation]: 確定済みの予約
     """
-    delete_expired_demo_reservations(db)
+    cleaner.delete_expired(db)
     return reservations_crud.get_confirmed_reservations(db)
 
 
-def list_history(db: Session) -> list[Reservation]:
-    """新しく作られた順に、予約をHISTORY_LIMIT件返す。デモ中は、時間が過ぎた予約を先に消す
+def list_history(db: Session, cleaner: ExpiredReservationCleaner) -> list[Reservation]:
+    """新しく作られた順に、予約をHISTORY_LIMIT件返す。期限切れの予約は先に消す
 
     Args:
         db (Session): DBのセッション
+        cleaner (ExpiredReservationCleaner): 期限切れの予約の掃除
 
     Returns:
         list[Reservation]: 新しい順の予約
     """
-    delete_expired_demo_reservations(db)
+    cleaner.delete_expired(db)
     return reservations_crud.get_latest_reservations(db, HISTORY_LIMIT)
 
 
 def create_reservation(
     db: Session,
+    cleaner: ExpiredReservationCleaner,
     customer_name: str,
     instagram_id: str | None,
     phone_number: str | None,
@@ -102,6 +55,7 @@ def create_reservation(
 
     Args:
         db (Session): DBのセッション
+        cleaner (ExpiredReservationCleaner): 期限切れの予約の掃除
         customer_name (str): お客様の名前
         instagram_id (str | None): InstagramのID
         phone_number (str | None): 電話番号
@@ -128,7 +82,7 @@ def create_reservation(
     end = start + timedelta(hours=menu.duration)
 
     # デモ中に時間が過ぎた予約の枠は、また予約できるようにする
-    delete_expired_demo_reservations(db)
+    cleaner.delete_expired(db)
     if reservations_crud.count_overlapping_reservations(db, start, end) > 0:
         raise AppError(400, "申し訳ありません。この時間はすでに予約が埋まっています。")
 
@@ -266,42 +220,3 @@ def cancel_reservation(db: Session, reservation_id: int) -> None:
     reservation = get_confirmed_reservation(db, reservation_id)
     reservation.status = reservations_crud.CANCELLED
     db.commit()
-
-
-def seed_demo_reservations(db: Session) -> None:
-    """予約をすべて消し、明日からDEMO_DAYS日分のダミーの予約を入れ直して、コミットする
-
-    デモ用。起動するたびに呼び、名前や日付をいつも新しくする。
-    定休日(月・火)を除いた日に、DEMO_HOURSの時刻で入れる。メニューとお客様は順番に使う。
-    入れ直した日時をdemo_seeded_atに置き、これより後に作られた予約を時間が過ぎたら消すようにする。
-
-    Args:
-        db (Session): DBのセッション
-    """
-    global demo_seeded_at
-    reservations_crud.delete_all_reservations(db)
-    menus = menus_crud.get_active_menus(db)
-
-    today = datetime.now(JST).date()
-    count = 0
-    for offset in range(1, DEMO_DAYS + 1):
-        day = today + timedelta(days=offset)
-        if day.weekday() in (0, 1):  # 月・火は定休日
-            continue
-        for hour in DEMO_HOURS:
-            menu = menus[count % len(menus)]
-            start = to_utc_naive(datetime(day.year, day.month, day.day, hour, tzinfo=JST))
-            customer_name, instagram_id = DEMO_CUSTOMERS[count % len(DEMO_CUSTOMERS)]
-            reservations_crud.create_reservation(
-                db,
-                customer_name,
-                instagram_id,
-                DEMO_PHONE_NUMBER,
-                menu.id,
-                start,
-                start + timedelta(hours=menu.duration),
-                now_utc() - timedelta(hours=count),
-            )
-            count += 1
-    db.commit()
-    demo_seeded_at = now_utc()

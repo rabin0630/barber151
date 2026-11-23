@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
-from src.dependencies import get_db, require_admin
+from src.dependencies import get_cleaner, get_db, require_admin
 from src.models import Reservation
 from src.schemas.reservations import (
     ChangeReservationContactsRequest,
@@ -18,21 +18,25 @@ from src.schemas.reservations import (
     ReservationsResponse,
 )
 from src.services import reservation_service
+from src.services.cleaners import ExpiredReservationCleaner
 
 router = APIRouter()
 
 
 @router.get("/reservations", response_model=ReservationSlotsResponse)
-def get_reservation_slots(db: Session = Depends(get_db)) -> ReservationSlotsResponse:
+def get_reservation_slots(
+    db: Session = Depends(get_db), cleaner: ExpiredReservationCleaner = Depends(get_cleaner)
+) -> ReservationSlotsResponse:
     """GET /reservations: 確定済みの予約の時間帯をすべて返す。予約フォームで空きを出すのに使う
 
     Args:
         db (Session): DBのセッション
+        cleaner (ExpiredReservationCleaner): 期限切れの予約の掃除
 
     Returns:
         ReservationSlotsResponse: 確定済みの予約の時間帯
     """
-    reservations = reservation_service.list_confirmed_reservations(db)
+    reservations = reservation_service.list_confirmed_reservations(db, cleaner)
     return ReservationSlotsResponse(
         reservations=[
             ReservationSlot(start_datetime=r.start_datetime, end_datetime=r.end_datetime)
@@ -42,16 +46,19 @@ def get_reservation_slots(db: Session = Depends(get_db)) -> ReservationSlotsResp
 
 
 @router.get("/admin/reservations", response_model=ReservationsResponse, dependencies=[Depends(require_admin)])
-def get_reservations(db: Session = Depends(get_db)) -> ReservationsResponse:
+def get_reservations(
+    db: Session = Depends(get_db), cleaner: ExpiredReservationCleaner = Depends(get_cleaner)
+) -> ReservationsResponse:
     """GET /admin/reservations: 確定済みの予約を、お客様の名前つきですべて返す(管理用)
 
     Args:
         db (Session): DBのセッション
+        cleaner (ExpiredReservationCleaner): 期限切れの予約の掃除
 
     Returns:
         ReservationsResponse: 確定済みの予約
     """
-    reservations = reservation_service.list_confirmed_reservations(db)
+    reservations = reservation_service.list_confirmed_reservations(db, cleaner)
     return ReservationsResponse(reservations=[to_reservation_item(r) for r in reservations])
 
 
@@ -176,16 +183,19 @@ def cancel_reservation(reservation_id: int, db: Session = Depends(get_db)) -> Re
 
 
 @router.get("/history", response_model=HistoryResponse, dependencies=[Depends(require_admin)])
-def get_history(db: Session = Depends(get_db)) -> HistoryResponse:
+def get_history(
+    db: Session = Depends(get_db), cleaner: ExpiredReservationCleaner = Depends(get_cleaner)
+) -> HistoryResponse:
     """GET /history: 新しく作られた順に予約を返す(管理用)
 
     Args:
         db (Session): DBのセッション
+        cleaner (ExpiredReservationCleaner): 期限切れの予約の掃除
 
     Returns:
         HistoryResponse: 新しい順の予約
     """
-    reservations = reservation_service.list_history(db)
+    reservations = reservation_service.list_history(db, cleaner)
     return HistoryResponse(
         history=[
             HistoryItem(
@@ -201,13 +211,16 @@ def get_history(db: Session = Depends(get_db)) -> HistoryResponse:
 
 @router.post("/reservations", response_model=CreateReservationResponse)
 def create_reservation(
-    request: CreateReservationRequest, db: Session = Depends(get_db)
+    request: CreateReservationRequest,
+    db: Session = Depends(get_db),
+    cleaner: ExpiredReservationCleaner = Depends(get_cleaner),
 ) -> CreateReservationResponse:
     """POST /reservations: 予約を登録する
 
     Args:
         request (CreateReservationRequest): 予約の内容
         db (Session): DBのセッション
+        cleaner (ExpiredReservationCleaner): 期限切れの予約の掃除
 
     Returns:
         CreateReservationResponse: 完了のメッセージ
@@ -220,6 +233,7 @@ def create_reservation(
     """
     reservation_service.create_reservation(
         db,
+        cleaner,
         request.name,
         request.instagram_id,
         request.phone_number,
