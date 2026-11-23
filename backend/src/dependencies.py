@@ -1,4 +1,4 @@
-"""FastAPIのDependsで使う共通の部品(DBのセッション、期限切れの予約の掃除、管理用APIの認証)"""
+"""FastAPIのDependsで使う共通の部品(DBのセッション、予約のサービス、管理用APIの認証)"""
 import secrets
 from collections.abc import Iterator
 
@@ -10,6 +10,7 @@ from src import config
 from src.database import SessionLocal
 from src.exceptions import AppError
 from src.services.cleaners import ExpiredReservationCleaner
+from src.services.reservation_service import ReservationService
 
 ## auto_error=Falseにして、ヘッダーがない時もrequire_adminで同じ401を返す
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -38,6 +39,21 @@ def get_cleaner(request: Request) -> ExpiredReservationCleaner:
         ExpiredReservationCleaner: デモならDemoReservations、そうでなければNoCleanup
     """
     return request.app.state.cleaner
+
+
+def get_reservation_service(
+    db: Session = Depends(get_db), cleaner: ExpiredReservationCleaner = Depends(get_cleaner)
+) -> ReservationService:
+    """リクエストごとに、そのリクエストのDBのセッションを持ったReservationServiceを作る
+
+    Args:
+        db (Session): DBのセッション
+        cleaner (ExpiredReservationCleaner): 期限切れの予約の掃除
+
+    Returns:
+        ReservationService: 予約のサービス
+    """
+    return ReservationService(db, cleaner)
 
 
 def require_admin(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme)) -> None:
