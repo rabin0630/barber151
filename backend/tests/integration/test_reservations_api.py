@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from src import config
 from src.models import Reservation
 from src.services import reservation_service
+from src.services.contacts import INSTAGRAM_ID_PATTERN
 from src.services.menu_service import DEFAULT_MENUS
 
 
@@ -416,7 +417,7 @@ def test_seed_demo_reservations(db: Session):
     # お客様の名前とInstagramのIDは、DEMO_CUSTOMERSから順に使う
     assert (reservations[0].customer_name, reservations[0].instagram_id) == reservation_service.DEMO_CUSTOMERS[0]
     for name, instagram_id in reservation_service.DEMO_CUSTOMERS:
-        assert reservation_service.INSTAGRAM_ID_PATTERN.fullmatch(instagram_id)
+        assert INSTAGRAM_ID_PATTERN.fullmatch(instagram_id)
 
     reservation_service.seed_demo_reservations(db)
     assert db.query(Reservation).count() == len(reservations)

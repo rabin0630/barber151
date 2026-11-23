@@ -1,7 +1,7 @@
-"""reservation_serviceの単体テスト"""
+"""time_utilsの単体テスト"""
 from datetime import datetime, timedelta, timezone
 
-from src.services.reservation_service import to_utc_naive
+from src.time_utils import to_utc_naive
 
 
 def test_to_utc_naive_from_aware():
