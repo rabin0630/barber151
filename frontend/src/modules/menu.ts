@@ -4,7 +4,12 @@ import { MENU_CATEGORIES } from "./menuCategories.ts";
 
 const menuPageEL = document.getElementById("step-1-menu") as HTMLDivElement;
 
-// メニューのカテゴリを作成する関数
+/**
+ * メニューのカテゴリを作成する
+ *
+ * @param category カテゴリ
+ * @return 見出し付きのカテゴリの要素
+ */
 function renderCategory(category: MenuCategory): HTMLDivElement {
   const menuCategoryEl: HTMLDivElement = document.createElement("div");
   menuCategoryEl.className = "menu-category";
@@ -25,7 +30,13 @@ function renderCategory(category: MenuCategory): HTMLDivElement {
   return menuCategoryEl;
 }
 
-// メニューのカードを作成する関数
+/**
+ * メニューのカードを作成する
+ *
+ * @param menu メニュー
+ * @param isFirst 1つ目の項目ならtrue。ラジオボタンにrequiredを付ける
+ * @return メニューのカード
+ */
 function renderMenuCard(menu: MenuInfo, isFirst: boolean): HTMLLabelElement {
   // --- menucard htmlを作成 ---
   const menuCardDiv: HTMLLabelElement = document.createElement("label");
@@ -59,8 +70,10 @@ function renderMenuCard(menu: MenuInfo, isFirst: boolean): HTMLLabelElement {
 
 /**
  * サーバーからメニューを取得し、Step1にカテゴリごとのカードを描画する
+ *
  * メニューが1件もないカテゴリは表示しない
- * @returns 取得したメニュー。失敗した時は空配列
+ *
+ * @return 取得したメニュー。失敗した時は空配列
  */
 export async function loadMenus(): Promise<MenuInfo[]> {
   let menus: MenuInfo[];

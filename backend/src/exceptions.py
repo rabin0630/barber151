@@ -15,6 +15,12 @@ class AppError(Exception):
     """
 
     def __init__(self, status_code: int, detail: str):
+        """ステータスコードとエラーの内容を持つ例外を作る
+
+        Args:
+            status_code (int): 返すHTTPのステータスコード
+            detail (str): エラーの内容
+        """
         super().__init__(detail)
         self.status_code = status_code
         self.detail = detail

@@ -10,7 +10,12 @@ const contactMenuSelect = document.getElementById('contact-menu-select') as HTML
 /** 所要時間の選択肢の上限（営業時間 8:00〜20:00 に収まる時間） */
 const MAX_DURATION: number = 12;
 
-// メニュー管理欄の上に、結果のメッセージを表示する
+/**
+ * メニュー管理欄の上に、結果のメッセージを表示する
+ *
+ * @param message 表示する文章
+ * @param isError エラーとして赤く表示するならtrue
+ */
 function showStatus(message: string, isError: boolean): void {
   statusEl.textContent = message;
   statusEl.style.display = 'block';
@@ -18,7 +23,13 @@ function showStatus(message: string, isError: boolean): void {
   statusEl.style.color = isError ? '#991b1b' : '#166534';
 }
 
-// メニュー1件分の編集行を作る。menuを渡さなければ追加用の空の行になる
+/**
+ * メニュー1件分の編集行を作る
+ *
+ * @param category メニューの大きい項目
+ * @param menu 編集するメニュー。省略すると追加用の空の行になる
+ * @return 作った編集行
+ */
 function renderMenuRow(category: MenuType, menu?: MenuInfo): HTMLFormElement {
   const form: HTMLFormElement = document.createElement('form');
   form.className = menu ? 'menu-row' : 'menu-row menu-row-new';
@@ -114,7 +125,11 @@ function renderMenuRow(category: MenuType, menu?: MenuInfo): HTMLFormElement {
   return form;
 }
 
-// 大きい項目ごとに、登録済みのメニューの編集行と追加用の行を描画する
+/**
+ * 大きい項目ごとに、登録済みのメニューの編集行と追加用の行を描画する
+ *
+ * @param menus 削除されていないメニュー
+ */
 function renderMenuManager(menus: MenuInfo[]): void {
   managerEl.innerHTML = '';
 
@@ -141,7 +156,13 @@ function renderMenuManager(menus: MenuInfo[]): void {
   });
 }
 
-// メニューの選択肢を、大きい項目ごとにまとめて作り直す。placeholderを渡すと先頭に未選択の選択肢を置く
+/**
+ * メニューの選択肢を、大きい項目ごとにまとめて作り直す
+ *
+ * @param select 作り直す選択肢
+ * @param menus 削除されていないメニュー
+ * @param placeholder 先頭に置く未選択の選択肢の文字。省略すると置かない
+ */
 function renderMenuSelect(select: HTMLSelectElement, menus: MenuInfo[], placeholder?: string): void {
   select.innerHTML = '';
   if (placeholder) select.appendChild(new Option(placeholder, ''));

@@ -37,7 +37,12 @@ if (dateJumpInput) {
   });
 }
 
-/** APIの予約1件を、カレンダー描画用の形にする */
+/**
+ * APIの予約1件を、カレンダー描画用の形にする
+ *
+ * @param r APIから受け取った予約
+ * @return カレンダー描画用の予約
+ */
 function toAdminReservation(r: ReservationItem): AdminReservation {
   return {
     id: r.id,
@@ -78,7 +83,11 @@ async function loadHistory(): Promise<void> {
   }
 }
 
-/** 予約追加の履歴を一覧に描画する */
+/**
+ * 予約追加の履歴を一覧に描画する
+ *
+ * @param history 新しい順の予約履歴
+ */
 function renderHistory(history: HistoryItem[]): void {
   const historyList = document.getElementById('history-list') as HTMLUListElement;
   historyList.innerHTML = '';
@@ -148,7 +157,11 @@ async function enterAdmin(): Promise<void> {
   await loadAndRenderSchedule();
 }
 
-/** ログインモーダルにエラーを表示する */
+/**
+ * ログインモーダルにエラーを表示する
+ *
+ * @param message 表示するエラーの文章
+ */
 function showLoginError(message: string): void {
   loginMessage.textContent = message;
   loginMessage.style.display = 'block';
@@ -182,6 +195,7 @@ loginForm.addEventListener('submit', async (e: SubmitEvent) => {
 
 /**
  * このタブで一度入っていれば、保存したパスワードを確かめて、モーダルを出さずに入る
+ *
  * 確かめている間はモーダルも出さない(一瞬モーダルが見えてしまうのを防ぐ)
  */
 async function restoreLogin(): Promise<void> {
@@ -218,7 +232,13 @@ prevBtns.forEach((btn: HTMLButtonElement) => {
   });
 });
 
-/** startDateからdaysToShow日分の予約表を描画する。予約はカード、空き枠は「＋」、定休日と過ぎた時間は「-」にする */
+/**
+ * startDateからdaysToShow日分の予約表を描画する
+ *
+ * 予約はカード、空き枠は「＋」、定休日と過ぎた時間は「-」にする
+ *
+ * @param startDate 表の最初の日
+ */
 function renderSchedule(startDate: Date): void {
   if (dateJumpInput) {
     const startStr: string = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
@@ -269,7 +289,13 @@ function renderSchedule(startDate: Date): void {
     headerRow.appendChild(th);
   }
 
-  /** 指定した日時から"開始する"予約データを返す関数 */
+  /**
+   * 指定した日時から"開始する"予約データを返す
+   *
+   * @param date 枠の日付
+   * @param hour 枠の開始時刻(時)
+   * @return その枠から開始する予約。なければnull
+   */
   const getStartingReservation = (date: Date, hour: number): AdminReservation | null => {
     const slotStart: Date = new Date(date);
     slotStart.setHours(hour, 0, 0, 0);
@@ -362,7 +388,11 @@ const adminStatusMessage = document.getElementById('admin-status-message') as HT
 const adminSubmitBtn = document.getElementById('admin-submit-btn') as HTMLButtonElement;
 setupPhoneNumberInput(document.getElementById('admin-customer-phone') as HTMLInputElement);
 
-/** 電話予約を追加するモーダルを、押した枠の日時で開く */
+/**
+ * 電話予約を追加するモーダルを、押した枠の日時で開く
+ *
+ * @param slotStart 押した枠の開始日時
+ */
 function openReservationModal(slotStart: Date): void {
   const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][slotStart.getDay()];
   modalDatetimeDisplay.textContent = `${slotStart.getMonth() + 1}/${slotStart.getDate()}(${dayOfWeek}) ${slotStart.getHours()}:00`;
@@ -434,12 +464,25 @@ const contactPhone = document.getElementById('contact-phone') as HTMLElement;
 const contactInstagram = document.getElementById('contact-instagram') as HTMLElement;
 const contactCloseBtn = document.getElementById('contact-close-btn') as HTMLButtonElement;
 
-/** 電話番号を090-1234-5678の形にする。11桁でなければそのまま */
+/**
+ * 電話番号を090-1234-5678の形にする
+ *
+ * @param phoneNumber 電話番号
+ * @return 整えた電話番号。11桁でなければそのまま
+ */
 function formatPhoneNumber(phoneNumber: string): string {
   return phoneNumber.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
 }
 
-/** 連絡先の値のボタン。押すと編集モーダルを開く。値がなければ「未登録」と出す */
+/**
+ * 連絡先の値のボタンを作る
+ *
+ * 押すと編集モーダルを開く。値がなければ「未登録」と出す
+ *
+ * @param text ボタンに出す値
+ * @param kind 編集する項目
+ * @return 作ったボタン
+ */
 function createContactValueButton(text: string | null, kind: ContactKind): HTMLButtonElement {
   const button: HTMLButtonElement = document.createElement('button');
   button.type = 'button';
@@ -456,7 +499,11 @@ function createContactValueButton(text: string | null, kind: ContactKind): HTMLB
   return button;
 }
 
-/** 連絡先モーダルの名前・電話番号・Instagramの欄を描く */
+/**
+ * 連絡先モーダルの名前・電話番号・Instagramの欄を描く
+ *
+ * @param res 表示する予約
+ */
 function renderContactValues(res: AdminReservation): void {
   contactCustomerName.textContent = `${res.customerName} 様`;
   contactName.replaceChildren(createContactValueButton(res.customerName, 'name'));
@@ -467,13 +514,22 @@ function renderContactValues(res: AdminReservation): void {
 /** 連絡先モーダルで開いている予約。取り消しの時に使う */
 let contactReservation: AdminReservation | null = null;
 
-/** 予約日時を「10/18(日) 10:00 〜 11:00」の形にする */
+/**
+ * 予約日時を「10/18(日) 10:00 〜 11:00」の形にする
+ *
+ * @param res 予約
+ * @return 整えた予約日時
+ */
 function formatReservationTime(res: AdminReservation): string {
   const dayOfWeek: string = ['日', '月', '火', '水', '木', '金', '土'][res.start.getDay()];
   return `${res.start.getMonth() + 1}/${res.start.getDate()}(${dayOfWeek}) ${res.start.getHours()}:00 〜 ${res.end.getHours()}:00`;
 }
 
-/** 押した予約の連絡先モーダルを開く */
+/**
+ * 押した予約の連絡先モーダルを開く
+ *
+ * @param res 押した予約
+ */
 function openContactModal(res: AdminReservation): void {
   contactReservation = res;
   contactDatetime.textContent = formatReservationTime(res);
@@ -487,7 +543,10 @@ function openContactModal(res: AdminReservation): void {
 
 /**
  * メニューの選択肢で、予約の今のメニューを選んでおく
+ *
  * 削除済みのメニューは選択肢にないので、選べない選択肢として一時的に足す
+ *
+ * @param res 表示する予約
  */
 function selectContactMenu(res: AdminReservation): void {
   contactMenuSelect.querySelector('option[data-removed-menu]')?.remove();
@@ -556,7 +615,13 @@ let contactEditKind: ContactKind = 'phone';
 /** 編集モーダルを開いた時(保存した後)の値。入力欄と比べて、保存ボタンを出すか決める */
 let savedContactValue: string = '';
 
-/** 保存してある値を、入力欄に出す形にする */
+/**
+ * 保存してある値を、入力欄に出す形にする
+ *
+ * @param res 予約
+ * @param kind 編集する項目
+ * @return 入力欄に出す値
+ */
 function contactInputValue(res: AdminReservation, kind: ContactKind): string {
   if (kind === 'name') return res.customerName;
   if (kind === 'phone') return res.phoneNumber ? formatPhoneNumber(res.phoneNumber) : '';
@@ -564,8 +629,14 @@ function contactInputValue(res: AdminReservation, kind: ContactKind): string {
 }
 
 /**
- * 比べるために値をそろえる。名前は前後の空白を除く。電話番号は数字だけ(全角は半角に)、InstagramはIDだけにする
+ * 比べるために値をそろえる
+ *
+ * 名前は前後の空白を除く。電話番号は数字だけ(全角は半角に)、InstagramはIDだけにする
  * 例: "090-1234-5678" と "09012345678" は同じ、"@barber" と "barber" は同じとみなす
+ *
+ * @param kind 編集する項目
+ * @param value 入力された値
+ * @return そろえた値
  */
 function normalizeContactValue(kind: ContactKind, value: string): string {
   if (kind === 'name') return value.trim();
@@ -575,12 +646,23 @@ function normalizeContactValue(kind: ContactKind, value: string): string {
   return value.trim().replace(/^@/, '');
 }
 
-/** 項目の保存ボタンを返す */
+/**
+ * 項目の保存ボタンを返す
+ *
+ * @param kind 編集する項目
+ * @return 項目の保存ボタン
+ */
 function saveButtonOf(kind: ContactKind): HTMLButtonElement {
   return contactEditFields[kind].querySelector('.contact-edit-save-btn') as HTMLButtonElement;
 }
 
-/** 「電話する」「Instagramを開く」のリンクを、保存してある値で作る。名前の時は出さない */
+/**
+ * 「電話する」「Instagramを開く」のリンクを、保存してある値で作る
+ *
+ * 名前の時は出さない
+ *
+ * @param res 編集している予約
+ */
 function renderContactEditAction(res: AdminReservation): void {
   contactEditAction.style.display = contactEditKind === 'name' ? 'none' : '';
   if (contactEditKind === 'phone') {
@@ -599,7 +681,11 @@ function renderContactEditAction(res: AdminReservation): void {
   }
 }
 
-/** 項目の編集モーダルを、保存してある値で開く */
+/**
+ * 項目の編集モーダルを、保存してある値で開く
+ *
+ * @param kind 編集する項目
+ */
 function openContactEdit(kind: ContactKind): void {
   if (!contactReservation) return;
   contactEditKind = kind;

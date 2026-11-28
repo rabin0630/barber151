@@ -5,14 +5,23 @@ import { ADMIN_TUTORIAL_PARAM_REFLECTION } from './adminTutorialParams.ts';
 /** 練習で選んでもらうメニューの名前 */
 const PRACTICE_MENU_NAME = 'フルコース';
 
-/** 予約画面が今どの段階を表示しているか（1: メニュー選択, 2: 日時選択, 3: 内容確認） */
+/**
+ * 予約画面が今どの段階を表示しているか返す
+ *
+ * @return 1: メニュー選択, 2: 日時選択, 3: 内容確認
+ */
 const getScreen = (): number => {
   if (document.querySelector('#step-3-confirm.active')) return 3;
   if (document.querySelector('#step-2-date.active')) return 2;
   return 1;
 };
 
-/** 予約画面の「戻る」ボタンを押して、screen の段階まで戻す関数を作る */
+/**
+ * 予約画面の「戻る」ボタンを押して、screen の段階まで戻す関数を作る
+ *
+ * @param screen 戻す先の段階
+ * @return 戻す関数
+ */
 const backToScreen = (screen: number) => (): void => {
   for (let i: number = getScreen(); i > screen; i--) {
     (document.getElementById('footer-back-btn') as HTMLButtonElement).click();
@@ -113,7 +122,11 @@ const JUMP_TO_REFLECTION: TutorialJump = {
   },
 };
 
-/** 予約画面のチュートリアルを始める。終わる・スキップするとトップページに戻る */
+/**
+ * 予約画面のチュートリアルを始める
+ *
+ * 終わる・スキップするとトップページに戻る
+ */
 export function startBookingTutorial(): void {
   startTutorial(STEPS, {
     jump: JUMP_TO_REFLECTION,
