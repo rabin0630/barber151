@@ -29,7 +29,7 @@ def get_test_db() -> Iterator[Session]:
 
 
 class FakeClock:
-    """テストで時刻を決められる時計。ReservationServiceとDemoReservationsのnowに渡す
+    """テストで時刻を決められる時計。ReservationServiceのnowに渡す
 
     fixedがNoneの間は本当の今の時刻を返す。作成日時の順番を確かめるテストが、そのまま動くようにするため。
 

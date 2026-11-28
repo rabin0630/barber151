@@ -11,16 +11,14 @@ from src import models  # noqa: F401  create_allの前にテーブル定義を�
 from src.database import Base, SessionLocal, engine
 from src.exceptions import AppError
 from src.routers import menus_routers, reservations_routers
-from src.services import menu_service
-from src.services.cleaners import DemoReservations, ExpiredReservationCleaner, NoCleanup
+from src.services import demo_service, menu_service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """APIの起動時に、テーブルがなければ作り、メニューがなければ初期データを入れる
 
-    期限切れの予約の掃除をapp.state.cleanerに置く。DEMO_DATAがtrueならDemoReservationsにして、
-    予約をすべて消してダミーの予約を入れ直す(ポートフォリオのデモ用)。そうでなければNoCleanupにする。
+    DEMO_DATAがtrueなら、予約をすべて消してダミーの予約を入れ直す(ポートフォリオのデモ用)。
 
     Args:
         app (FastAPI): FastAPIのアプリ
@@ -29,14 +27,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         None: ここでAPIが動き、止まる時に戻ってくる
     """
     Base.metadata.create_all(bind=engine)
-    cleaner: ExpiredReservationCleaner = NoCleanup()
     with SessionLocal() as db:
         menu_service.seed_menus(db)
         if config.DEMO_DATA:
-            demo = DemoReservations()
-            demo.seed(db)
-            cleaner = demo
-    app.state.cleaner = cleaner
+            demo_service.seed_demo_reservations(db)
     yield
 
 

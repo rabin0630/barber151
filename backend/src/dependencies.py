@@ -2,14 +2,13 @@
 import secrets
 from collections.abc import Iterator
 
-from fastapi import Depends, Request
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from src import config
 from src.database import SessionLocal
 from src.exceptions import AppError
-from src.services.cleaners import ExpiredReservationCleaner
 from src.services.reservation_service import ReservationService
 
 ## auto_error=Falseにして、ヘッダーがない時もrequire_adminで同じ401を返す
@@ -29,31 +28,16 @@ def get_db() -> Iterator[Session]:
         db.close()
 
 
-def get_cleaner(request: Request) -> ExpiredReservationCleaner:
-    """main.pyのlifespanで1つだけ作った、期限切れの予約の掃除を返す
-
-    Args:
-        request (Request): 受け取ったリクエスト
-
-    Returns:
-        ExpiredReservationCleaner: デモならDemoReservations、そうでなければNoCleanup
-    """
-    return request.app.state.cleaner
-
-
-def get_reservation_service(
-    db: Session = Depends(get_db), cleaner: ExpiredReservationCleaner = Depends(get_cleaner)
-) -> ReservationService:
+def get_reservation_service(db: Session = Depends(get_db)) -> ReservationService:
     """リクエストごとに、そのリクエストのDBのセッションを持ったReservationServiceを作る
 
     Args:
         db (Session): DBのセッション
-        cleaner (ExpiredReservationCleaner): 期限切れの予約の掃除
 
     Returns:
         ReservationService: 予約のサービス
     """
-    return ReservationService(db, cleaner)
+    return ReservationService(db)
 
 
 def require_admin(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme)) -> None:

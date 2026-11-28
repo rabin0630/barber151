@@ -1,5 +1,5 @@
 """/reservations、/admin/reservations、/historyの結合テスト"""
-from datetime import datetime, timedelta, timezone
+from datetime import timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -7,11 +7,9 @@ from sqlalchemy.orm import Session
 
 from src import config
 from src.models import Reservation
-from src.services import cleaners
-from src.services.cleaners import DemoReservations
+from src.services import demo_service
 from src.services.contacts import INSTAGRAM_ID_PATTERN
 from src.services.menu_service import DEFAULT_MENUS
-from tests.dependencies import FakeClock
 
 
 def menu_id_of(name: str) -> int:
@@ -403,52 +401,35 @@ def test_admin_token_not_set(admin_client: TestClient, monkeypatch):
     assert admin_client.get("/history").status_code == 401
 
 
-def test_seed_demo_reservations(db: Session, demo: DemoReservations):
+def test_seed_demo_reservations(db: Session):
     # 定休日(月・火)を除いた日に、重ならないダミーの予約を入れる。2回目は入れ直すので、件数は変わらない
-    demo.seed(db)
+    demo_service.seed_demo_reservations(db)
     reservations = db.query(Reservation).order_by(Reservation.start_datetime).all()
 
     assert len(reservations) > 0
     for r in reservations:
-        start_jst = r.start_datetime.replace(tzinfo=timezone.utc).astimezone(cleaners.JST)
-        end_jst = r.end_datetime.replace(tzinfo=timezone.utc).astimezone(cleaners.JST)
+        start_jst = r.start_datetime.replace(tzinfo=timezone.utc).astimezone(demo_service.JST)
+        end_jst = r.end_datetime.replace(tzinfo=timezone.utc).astimezone(demo_service.JST)
         assert start_jst.weekday() not in (0, 1)
         assert 8 <= start_jst.hour and end_jst.hour <= 20
     for before, after in zip(reservations, reservations[1:]):
         assert before.end_datetime <= after.start_datetime
     # お客様の名前とInstagramのIDは、DEMO_CUSTOMERSから順に使う
-    assert (reservations[0].customer_name, reservations[0].instagram_id) == cleaners.DEMO_CUSTOMERS[0]
-    for name, instagram_id in cleaners.DEMO_CUSTOMERS:
+    assert (reservations[0].customer_name, reservations[0].instagram_id) == demo_service.DEMO_CUSTOMERS[0]
+    for name, instagram_id in demo_service.DEMO_CUSTOMERS:
         assert INSTAGRAM_ID_PATTERN.fullmatch(instagram_id)
 
-    demo.seed(db)
+    demo_service.seed_demo_reservations(db)
     assert db.query(Reservation).count() == len(reservations)
 
 
-def test_seed_demo_reservations_replaces_all(client: TestClient, db: Session, demo: DemoReservations):
+def test_seed_demo_reservations_replaces_all(client: TestClient, db: Session):
     # 入れ直す時は、今ある予約をすべて消す
     reserve(client, "2026-10-12T01:00:00.000Z")
 
-    demo.seed(db)
+    demo_service.seed_demo_reservations(db)
 
     assert db.query(Reservation).filter(Reservation.customer_name == "山田").count() == 0
-
-
-def test_demo_reservations_expire(client: TestClient, db: Session, demo: DemoReservations, clock: FakeClock):
-    # デモ中に作った予約は5分たったら消え、同じ時間にまた予約できる。ダミーの予約は消えない
-    start = datetime(2026, 10, 12, 12, 0)
-    clock.fixed = start
-    demo.seed(db)
-    demo_count = db.query(Reservation).count()
-    clock.fixed = start + timedelta(minutes=1)
-    reserve(client, "2030-01-08T01:00:00.000Z")
-
-    clock.fixed = start + timedelta(minutes=5)
-    assert len(client.get("/reservations").json()["reservations"]) == demo_count + 1
-
-    clock.fixed = start + timedelta(minutes=6)
-    assert len(client.get("/reservations").json()["reservations"]) == demo_count
-    assert reserve(client, "2030-01-08T01:00:00.000Z").status_code == 200
 
 
 @pytest.mark.parametrize("phone_number", ["09012345678", "090-1234-5678", "090 1234 5678", "０９０－１２３４－５６７８"])

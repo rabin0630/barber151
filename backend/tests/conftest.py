@@ -11,7 +11,6 @@ from src.database import Base
 from src.dependencies import get_db, get_reservation_service
 from src.main import app
 from src.services import menu_service
-from src.services.cleaners import DemoReservations
 from src.services.reservation_service import ReservationService
 from tests.dependencies import FakeClock, TestSessionLocal, get_test_db, test_engine
 
@@ -47,28 +46,12 @@ def clock() -> FakeClock:
 
 
 @pytest.fixture
-def demo(clock: FakeClock) -> DemoReservations:
-    """テストごとに新しく作る、デモの予約の掃除
+def client(clock: FakeClock) -> Iterator[TestClient]:
+    """get_dbをテスト用のデータベースに、ReservationServiceをclockを使うものに差し替えたTestClient
 
-    seedを呼ぶまではseeded_atがNoneで何も消さないので、seedを呼んだテストだけ掃除が動く。
-
-    Args:
-        clock (FakeClock): 時計
-
-    Returns:
-        DemoReservations: デモの予約の掃除
-    """
-    return DemoReservations(now=clock)
-
-
-@pytest.fixture
-def client(demo: DemoReservations, clock: FakeClock) -> Iterator[TestClient]:
-    """get_dbをテスト用のデータベースに、ReservationServiceをdemoとclockを使うものに差し替えたTestClient
-
-    withを使わないので、lifespan(本番のデータベースへのcreate_allと、app.state.cleanerを置く処理)は動かない。
+    withを使わないので、lifespan(本番のデータベースへのcreate_allと、ダミーの予約の入れ直し)は動かない。
 
     Args:
-        demo (DemoReservations): デモの予約の掃除
         clock (FakeClock): 時計
 
     Yields:
@@ -76,7 +59,7 @@ def client(demo: DemoReservations, clock: FakeClock) -> Iterator[TestClient]:
     """
 
     def get_test_reservation_service(db: Session = Depends(get_db)) -> ReservationService:
-        return ReservationService(db, demo, now=clock)
+        return ReservationService(db, now=clock)
 
     app.dependency_overrides[get_db] = get_test_db
     app.dependency_overrides[get_reservation_service] = get_test_reservation_service

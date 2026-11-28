@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from src.crud import menus_crud, reservations_crud
 from src.exceptions import AppError
 from src.models import Menu, Reservation
-from src.services.cleaners import ExpiredReservationCleaner
 from src.services.contacts import normalize_contacts
 from src.time_utils import now_utc, to_utc_naive
 
@@ -21,36 +20,27 @@ class ReservationService:
 
     Attributes:
         db (Session): DBのセッション
-        cleaner (ExpiredReservationCleaner): 一覧や予約の前に呼ぶ、期限切れの予約の掃除
         now (Callable[[], datetime]): 今のUTCの日時(タイムゾーンなし)を返す関数。テストで時刻を決めるのに使う
     """
 
-    def __init__(
-        self,
-        db: Session,
-        cleaner: ExpiredReservationCleaner,
-        now: Callable[[], datetime] = now_utc,
-    ) -> None:
+    def __init__(self, db: Session, now: Callable[[], datetime] = now_utc) -> None:
         self.db = db
-        self.cleaner = cleaner
         self.now = now
 
     def list_confirmed(self) -> list[Reservation]:
-        """確定済みの予約をすべて返す。期限切れの予約は先に消す
+        """確定済みの予約をすべて返す
 
         Returns:
             list[Reservation]: 確定済みの予約
         """
-        self.cleaner.delete_expired(self.db)
         return reservations_crud.get_confirmed_reservations(self.db)
 
     def list_history(self) -> list[Reservation]:
-        """新しく作られた順に、予約をHISTORY_LIMIT件返す。期限切れの予約は先に消す
+        """新しく作られた順に、予約をHISTORY_LIMIT件返す
 
         Returns:
             list[Reservation]: 新しい順の予約
         """
-        self.cleaner.delete_expired(self.db)
         return reservations_crud.get_latest_reservations(self.db, HISTORY_LIMIT)
 
     def get_confirmed(self, reservation_id: int) -> Reservation:
@@ -105,8 +95,6 @@ class ReservationService:
         start = to_utc_naive(reservation_date)
         end = start + timedelta(hours=menu.duration)
 
-        # 期限切れの予約の枠は、また予約できるようにする
-        self.cleaner.delete_expired(self.db)
         if self._has_overlap(start, end):
             raise AppError(400, "申し訳ありません。この時間はすでに予約が埋まっています。")
 
