@@ -1,4 +1,5 @@
 """予約のルール(連絡先の必須チェック、重複チェック)と、予約の登録・取得・変更の処理"""
+from collections.abc import Callable
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
@@ -21,11 +22,18 @@ class ReservationService:
     Attributes:
         db (Session): DBのセッション
         cleaner (ExpiredReservationCleaner): 一覧や予約の前に呼ぶ、期限切れの予約の掃除
+        now (Callable[[], datetime]): 今のUTCの日時(タイムゾーンなし)を返す関数。テストで時刻を決めるのに使う
     """
 
-    def __init__(self, db: Session, cleaner: ExpiredReservationCleaner) -> None:
+    def __init__(
+        self,
+        db: Session,
+        cleaner: ExpiredReservationCleaner,
+        now: Callable[[], datetime] = now_utc,
+    ) -> None:
         self.db = db
         self.cleaner = cleaner
+        self.now = now
 
     def list_confirmed(self) -> list[Reservation]:
         """確定済みの予約をすべて返す。期限切れの予約は先に消す
@@ -103,7 +111,7 @@ class ReservationService:
             raise AppError(400, "申し訳ありません。この時間はすでに予約が埋まっています。")
 
         reservation = reservations_crud.create_reservation(
-            self.db, customer_name, instagram_id, phone_number, menu_id, start, end, now_utc()
+            self.db, customer_name, instagram_id, phone_number, menu_id, start, end, self.now()
         )
         return self._save(reservation)
 

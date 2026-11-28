@@ -7,10 +7,11 @@ from sqlalchemy.orm import Session
 
 from src import config
 from src.models import Reservation
-from src.services import cleaners, reservation_service
+from src.services import cleaners
 from src.services.cleaners import DemoReservations
 from src.services.contacts import INSTAGRAM_ID_PATTERN
 from src.services.menu_service import DEFAULT_MENUS
+from tests.dependencies import FakeClock
 
 
 def menu_id_of(name: str) -> int:
@@ -433,27 +434,19 @@ def test_seed_demo_reservations_replaces_all(client: TestClient, db: Session, de
     assert db.query(Reservation).filter(Reservation.customer_name == "山田").count() == 0
 
 
-def test_demo_reservations_expire(
-    client: TestClient, db: Session, demo: DemoReservations, monkeypatch: pytest.MonkeyPatch
-):
+def test_demo_reservations_expire(client: TestClient, db: Session, demo: DemoReservations, clock: FakeClock):
     # デモ中に作った予約は5分たったら消え、同じ時間にまた予約できる。ダミーの予約は消えない
     start = datetime(2026, 10, 12, 12, 0)
-
-    def set_now(now: datetime) -> None:
-        # 予約の作成日時(reservation_service)と、掃除の基準(cleaners)の両方の時計をそろえる
-        monkeypatch.setattr(reservation_service, "now_utc", lambda: now)
-        monkeypatch.setattr(cleaners, "now_utc", lambda: now)
-
-    set_now(start)
+    clock.fixed = start
     demo.seed(db)
     demo_count = db.query(Reservation).count()
-    set_now(start + timedelta(minutes=1))
+    clock.fixed = start + timedelta(minutes=1)
     reserve(client, "2030-01-08T01:00:00.000Z")
 
-    set_now(start + timedelta(minutes=5))
+    clock.fixed = start + timedelta(minutes=5)
     assert len(client.get("/reservations").json()["reservations"]) == demo_count + 1
 
-    set_now(start + timedelta(minutes=6))
+    clock.fixed = start + timedelta(minutes=6)
     assert len(client.get("/reservations").json()["reservations"]) == demo_count
     assert reserve(client, "2030-01-08T01:00:00.000Z").status_code == 200
 

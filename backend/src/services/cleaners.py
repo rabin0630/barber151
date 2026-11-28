@@ -1,5 +1,6 @@
 """一覧や予約の前に呼ぶ、期限切れの予約の掃除(本番用は何もしない、デモ用はダミーの予約の入れ直しも持つ)"""
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
@@ -72,10 +73,12 @@ class DemoReservations(ExpiredReservationCleaner):
     Attributes:
         seeded_at (datetime | None): ダミーの予約を入れ直した日時(UTC)。
             これより後に作られた予約を、DEMO_RESERVATION_LIFETIMEで消す。入れ直す前はNoneで、何も消さない
+        now (Callable[[], datetime]): 今のUTCの日時(タイムゾーンなし)を返す関数。テストで時刻を決めるのに使う
     """
 
-    def __init__(self) -> None:
+    def __init__(self, now: Callable[[], datetime] = now_utc) -> None:
         self.seeded_at: datetime | None = None
+        self.now = now
 
     def seed(self, db: Session) -> None:
         """予約をすべて消し、明日からDEMO_DAYS日分のダミーの予約を入れ直して、コミットする
@@ -90,7 +93,7 @@ class DemoReservations(ExpiredReservationCleaner):
         reservations_crud.delete_all_reservations(db)
         menus = menus_crud.get_active_menus(db)
 
-        today = datetime.now(JST).date()
+        today = self.now().replace(tzinfo=timezone.utc).astimezone(JST).date()
         count = 0
         for offset in range(1, DEMO_DAYS + 1):
             day = today + timedelta(days=offset)
@@ -108,11 +111,11 @@ class DemoReservations(ExpiredReservationCleaner):
                     menu.id,
                     start,
                     start + timedelta(hours=menu.duration),
-                    now_utc() - timedelta(hours=count),
+                    self.now() - timedelta(hours=count),
                 )
                 count += 1
         db.commit()
-        self.seeded_at = now_utc()
+        self.seeded_at = self.now()
 
     def delete_expired(self, db: Session) -> None:
         """デモ中に作られ、DEMO_RESERVATION_LIFETIMEを過ぎた予約を消し、コミットする
@@ -126,6 +129,6 @@ class DemoReservations(ExpiredReservationCleaner):
         if self.seeded_at is None:
             return
         reservations_crud.delete_reservations_created_between(
-            db, self.seeded_at, now_utc() - DEMO_RESERVATION_LIFETIME
+            db, self.seeded_at, self.now() - DEMO_RESERVATION_LIFETIME
         )
         db.commit()
