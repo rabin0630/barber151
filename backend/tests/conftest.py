@@ -2,15 +2,17 @@
 from collections.abc import Iterator
 
 import pytest
+from fastapi import Depends
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from src import config
 from src.database import Base
-from src.dependencies import get_db
+from src.dependencies import get_db, get_reservation_service
 from src.main import app
-from src.services import menu_service, reservation_service
-from tests.dependencies import TestSessionLocal, get_test_db, test_engine
+from src.services import menu_service
+from src.services.reservation_service import ReservationService
+from tests.dependencies import FakeClock, TestSessionLocal, get_test_db, test_engine
 
 
 ## テストで使う管理用のトークン
@@ -24,12 +26,6 @@ def admin_token(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
-def reset_demo(monkeypatch: pytest.MonkeyPatch) -> None:
-    """各テストで、デモの予約を消す仕組みを止めておく(seed_demo_reservationsを呼んだテストだけ動く)"""
-    monkeypatch.setattr(reservation_service, "demo_seeded_at", None)
-
-
-@pytest.fixture(autouse=True)
 def reset_tables() -> Iterator[None]:
     """各テストの前に、テーブルを作り直してメニューを登録する"""
     Base.metadata.drop_all(bind=test_engine)
@@ -40,15 +36,33 @@ def reset_tables() -> Iterator[None]:
 
 
 @pytest.fixture
-def client() -> Iterator[TestClient]:
-    """get_dbをテスト用のデータベースに差し替えたTestClient
+def clock() -> FakeClock:
+    """テストごとに新しく作る、時刻を決められる時計
 
-    withを使わないので、lifespan(本番のデータベースへのcreate_all)は動かない。
+    Returns:
+        FakeClock: 時計。clock.fixedに日時を入れると、その時刻になる
+    """
+    return FakeClock()
+
+
+@pytest.fixture
+def client(clock: FakeClock) -> Iterator[TestClient]:
+    """get_dbをテスト用のデータベースに、ReservationServiceをclockを使うものに差し替えたTestClient
+
+    withを使わないので、lifespan(本番のデータベースへのcreate_allと、ダミーの予約の入れ直し)は動かない。
+
+    Args:
+        clock (FakeClock): 時計
 
     Yields:
         TestClient: APIを呼ぶクライアント
     """
+
+    def get_test_reservation_service(db: Session = Depends(get_db)) -> ReservationService:
+        return ReservationService(db, now=clock)
+
     app.dependency_overrides[get_db] = get_test_db
+    app.dependency_overrides[get_reservation_service] = get_test_reservation_service
     yield TestClient(app)
     app.dependency_overrides.clear()
 

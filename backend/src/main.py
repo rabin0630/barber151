@@ -11,7 +11,7 @@ from src import models  # noqa: F401  create_allの前にテーブル定義を�
 from src.database import Base, SessionLocal, engine
 from src.exceptions import AppError
 from src.routers import menus_routers, reservations_routers
-from src.services import menu_service, reservation_service
+from src.services import demo_service, menu_service
 
 
 @asynccontextmanager
@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     with SessionLocal() as db:
         menu_service.seed_menus(db)
         if config.DEMO_DATA:
-            reservation_service.seed_demo_reservations(db)
+            demo_service.seed_demo_reservations(db)
     yield
 
 
